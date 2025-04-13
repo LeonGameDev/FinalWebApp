@@ -23,3 +23,33 @@ if (themeToggle && pageBody) {
     }
   });
 }
+
+// Layout switching functionality
+const gridViewBtn = document.getElementById("gridViewBtn");
+const listViewBtn = document.getElementById("listViewBtn");
+const notesContainer = document.getElementById("notesContainer");
+
+if (gridViewBtn && listViewBtn && notesContainer) {
+  // Set initial layout based on localStorage or default to grid view
+  if (localStorage.getItem("layout") === "list") {
+    notesContainer.classList.add("list-view");
+    notesContainer.classList.remove("grid-view");
+  } else {
+    notesContainer.classList.add("grid-view");
+    notesContainer.classList.remove("list-view");
+  }
+
+  // Switch to grid view
+  gridViewBtn.addEventListener("click", () => {
+    notesContainer.classList.add("grid-view");
+    notesContainer.classList.remove("list-view");
+    localStorage.setItem("layout", "grid");
+  });
+
+  // Switch to list view
+  listViewBtn.addEventListener("click", () => {
+    notesContainer.classList.add("list-view");
+    notesContainer.classList.remove("grid-view");
+    localStorage.setItem("layout", "list");
+  });
+}

@@ -2,16 +2,30 @@
 {% block title %}My Notes{% endblock %}
 {% block content %}
 <h2 class="mb-4">Your Notes</h2>
+
+<!-- View toggle buttons -->
+<div class="mb-3">
+  <button id="gridViewBtn" class="btn btn-outline-primary me-2">Grid View</button>
+  <button id="listViewBtn" class="btn btn-outline-primary">List View</button>
+</div>
+
 <a href="{{ url_for('new_note') }}" class="btn btn-primary mb-3">+ New Note</a>
 
-{% for note in notes %}
-  <div class="card mb-3 p-3 shadow-sm">
-    <h5>{{ note[1] }}</h5>
-    <p>{{ note[2] }}</p>
-    <a href="{{ url_for('edit_note', note_id=note[0]) }}" class="btn btn-sm btn-outline-info">Edit</a>
-    <a href="{{ url_for('delete_note', note_id=note[0]) }}" class="btn btn-sm btn-outline-danger">Delete</a>
-  </div>
-{% else %}
-  <p>You have no notes yet.</p>
-{% endfor %}
+<div id="notesContainer" class="row grid-view">
+  {% for note in notes %}
+    <div class="col-12 col-md-2 grid-view-item mb-3"> <!-- 2/12 for grid view -->
+      <div class="card p-3 shadow-sm">
+        <h5 class="card-title">{{ note[1] }}</h5> <!-- Only show the title -->
+        <div class="d-flex justify-content-start">
+          <a href="{{ url_for('edit_note', note_id=note[0]) }}" class="btn btn-sm btn-outline-info me-2">Edit</a>
+          <a href="{{ url_for('delete_note', note_id=note[0]) }}" class="btn btn-sm btn-outline-danger">Delete</a>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <p>You have no notes yet.</p>
+  {% endfor %}
+</div>
+
 {% endblock %}
+<script src="{{ url_for('static', filename='main.js') }}"></script>

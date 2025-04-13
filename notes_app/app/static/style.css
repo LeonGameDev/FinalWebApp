@@ -14,4 +14,53 @@ body.bg-dark .card {
 background-color: rgba(0, 0, 0, 0.5);
 color:  white;
 }
-    
+
+#logoutButton:hover {
+  background-color: red;  /* Red background on hover */
+  color: white;  /* White text on hover */
+}
+
+#notesContainer.grid-view .grid-view-item {
+  flex: 1 1 30%; /* 3 items per row */
+}
+
+#notesContainer.list-view .grid-view-item {
+  flex: 1 1 100%; /* 1 item per row */
+}
+
+#notesContainer {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+/* Grid view styling */
+.grid-view {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.grid-view .grid-view-item {
+  flex: 1 1 calc(16.666% - 1rem); /* 2/12 of the row for grid view */
+  max-width: calc(16.666% - 1rem); /* Ensure cards don’t become too wide */
+}
+
+.grid-view .card {
+  width: 100%; /* Ensure cards take full width of the grid item */
+}
+
+/* List view styling */
+.list-view {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.list-view .grid-view-item {
+  flex: 1 1 calc(50% - 1rem); /* 6/12 of the row for list view (50% width) */
+  max-width: calc(50% - 1rem); /* Ensure cards don't stretch too far */
+}
+
+.list-view .card {
+  width: 100%; /* Ensure cards take full width of the list item */
+}

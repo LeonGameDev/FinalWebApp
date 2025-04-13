@@ -105,7 +105,7 @@ def login():
 @app.route('/home')
 @login_required
 def home():
-    return render_template('home.html')
+    return render_template('notes.html')
 
 @app.route('/logout')
 @login_required
