@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm p-4">
+  <h2 class="mb-3">Welcome, {{ current_user.display_name }}!</h2>
+  <p><strong>Email:</strong> {{ current_user.email }}</p>
+  <p><a href="{{ url_for('logout') }}" class="btn btn-outline-danger">Logout</a></p>
+</div>
+{% endblock %}

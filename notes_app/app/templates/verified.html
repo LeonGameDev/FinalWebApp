@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Email Verification{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm p-4 text-center">
+  {% if success %}
+    <h2 class="mb-3">✅ Email Verified!</h2>
+    <p>You’ll be redirected to your home page shortly...</p>
+    <meta http-equiv="refresh" content="3;url={{ url_for('home') }}">
+  {% else %}
+    <h2 class="mb-3">❌ Invalid or Expired Link</h2>
+    <p>Please try registering again.</p>
+  {% endif %}
+</div>
+{% endblock %}
