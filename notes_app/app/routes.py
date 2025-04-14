@@ -105,7 +105,10 @@ def login():
 @app.route('/home')
 @login_required
 def home():
-    return render_template('notes.html')
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT id, title, content FROM notes WHERE user_id = %s", (current_user.id,))
+    user_notes = cur.fetchall()
+    return render_template('notes.html', notes=user_notes)
 
 @app.route('/logout')
 @login_required

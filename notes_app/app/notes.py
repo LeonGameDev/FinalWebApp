@@ -2,14 +2,6 @@ from flask import render_template, request, redirect, url_for
 from flask_login import login_required, current_user
 from app import app, mysql
 
-@app.route('/notes')
-@login_required
-def notes():
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT id, title, content FROM notes WHERE user_id = %s", (current_user.id,))
-    user_notes = cur.fetchall()
-    return render_template('notes.html', notes=user_notes)
-
 @app.route('/note/new', methods=['GET', 'POST'])
 @login_required
 def new_note():
@@ -20,7 +12,7 @@ def new_note():
         cur.execute("INSERT INTO notes (user_id, title, content) VALUES (%s, %s, %s)",
                     (current_user.id, title, content))
         mysql.connection.commit()
-        return redirect(url_for('notes'))
+        return redirect(url_for('home'))
     return render_template('note_form.html', note=None)
 
 @app.route('/note/edit/<int:note_id>', methods=['GET', 'POST'])
@@ -33,7 +25,7 @@ def edit_note(note_id):
         cur.execute("UPDATE notes SET title=%s, content=%s WHERE id=%s AND user_id=%s",
                     (title, content, note_id, current_user.id))
         mysql.connection.commit()
-        return redirect(url_for('notes'))
+        return redirect(url_for('home'))
 
     cur.execute("SELECT id, title, content FROM notes WHERE id=%s AND user_id=%s", (note_id, current_user.id))
     note = cur.fetchone()
@@ -45,4 +37,4 @@ def delete_note(note_id):
     cur = mysql.connection.cursor()
     cur.execute("DELETE FROM notes WHERE id=%s AND user_id=%s", (note_id, current_user.id))
     mysql.connection.commit()
-    return redirect(url_for('notes'))
+    return redirect(url_for('home'))

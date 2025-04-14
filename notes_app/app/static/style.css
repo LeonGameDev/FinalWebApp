@@ -64,3 +64,49 @@ color:  white;
 .list-view .card {
   width: 100%; /* Ensure cards take full width of the list item */
 }
+
+.card {
+  transition: background-color 0.3s ease;
+}
+
+.color-picker-window {
+  position: fixed;
+  width: 220px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  z-index: 1000;
+  display: none;
+}
+
+.color-picker-header {
+  padding: 8px 12px;
+  background: #f0f0f0;
+  cursor: move;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+}
+
+.close-picker {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 5px;
+}
+
+.hidden-color-input {
+  width: 100%;
+  border: none;
+  padding: 12px;
+  cursor: pointer;
+}
+
+/* Style for the color palette button */
+.color-palette {
+  cursor: pointer;
+}
+

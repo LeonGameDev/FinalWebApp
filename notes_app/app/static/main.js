@@ -53,3 +53,94 @@ if (gridViewBtn && listViewBtn && notesContainer) {
     localStorage.setItem("layout", "list");
   });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Create color picker window if it doesn't exist
+  let pickerWindow = document.querySelector('.color-picker-window');
+  if (!pickerWindow) {
+    pickerWindow = document.createElement('div');
+    pickerWindow.className = 'color-picker-window';
+    pickerWindow.innerHTML = `
+      <div class="color-picker-header">
+        <button class="close-picker">×</button>
+      </div>
+      <input type="color" class="hidden-color-input">
+    `;
+    document.body.appendChild(pickerWindow);
+  }
+
+  const header = pickerWindow.querySelector('.color-picker-header');
+  const closeBtn = pickerWindow.querySelector('.close-picker');
+  const colorInput = pickerWindow.querySelector('.hidden-color-input');
+
+  // Track which card is being colored
+  let currentCard = null;
+
+  document.querySelectorAll('.color-palette').forEach(button => {
+    button.addEventListener('click', (e) => {
+      currentCard = button.closest('.card');
+      pickerWindow.style.display = 'block';
+      
+      // Position near the clicked button
+      const rect = button.getBoundingClientRect();
+      pickerWindow.style.left = `${rect.left}px`;
+      pickerWindow.style.top = `${rect.bottom + 5}px`;
+      
+      e.stopPropagation();
+    });
+  });
+
+  // Update card color when a color is picked
+  colorInput.addEventListener('input', () => {
+    if (currentCard) {
+      currentCard.style.backgroundColor = colorInput.value;
+    }
+  });
+
+  // Close window
+  closeBtn.addEventListener('click', () => {
+    pickerWindow.style.display = 'none';
+  });
+
+  // --- Dragging Logic ---
+  let isDragging = false;
+  let offsetX, offsetY;
+
+  header.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    isDragging = true;
+    offsetX = e.clientX - pickerWindow.getBoundingClientRect().left;
+    offsetY = e.clientY - pickerWindow.getBoundingClientRect().top;
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    pickerWindow.style.left = `${e.clientX - offsetX}px`;
+    pickerWindow.style.top = `${e.clientY - offsetY}px`;
+  });
+
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+  });
+
+  // Close when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!pickerWindow.contains(e.target)) {
+      pickerWindow.style.display = 'none';
+    }
+  });
+});
+
+// Your existing view toggle functionality can remain
+document.getElementById('gridViewBtn').addEventListener('click', function() {
+  document.getElementById('notesContainer').classList.add('grid-view');
+  document.getElementById('notesContainer').classList.remove('list-view');
+});
+
+document.getElementById('listViewBtn').addEventListener('click', function() {
+  document.getElementById('notesContainer').classList.add('list-view');
+  document.getElementById('notesContainer').classList.remove('grid-view');
+});
+
+
