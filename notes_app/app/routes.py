@@ -106,7 +106,7 @@ def login():
 @login_required
 def home():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT id, title, content FROM notes WHERE user_id = %s", (current_user.id,))
+    cur.execute("SELECT id, title, content, color FROM notes WHERE user_id = %s", (current_user.id,))
     user_notes = cur.fetchall()
     return render_template('notes.html', notes=user_notes)
 
@@ -174,3 +174,20 @@ def is_verified():
     if result and result[0] == 1:
         return jsonify({'verified': True})
     return jsonify({'verified': False})
+
+@app.route('/note/color/<int:note_id>', methods=['POST'])
+@login_required
+def update_note_color(note_id):
+    data = request.get_json()
+    color = data.get('color')
+    theme = data.get('theme')
+
+    # Treat default theme colors as None
+    if (theme == "light" and color.lower() == "#ffffff") or (theme == "dark" and color.lower() == "#000000"):
+        color = None
+
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE notes SET color = %s WHERE id = %s AND user_id = %s", (color, note_id, current_user.id))
+    mysql.connection.commit()
+    return jsonify({"success": True})
+

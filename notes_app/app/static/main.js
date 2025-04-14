@@ -93,9 +93,17 @@ document.addEventListener('DOMContentLoaded', function() {
   // Update card color when a color is picked
   colorInput.addEventListener('input', () => {
     if (currentCard) {
-      currentCard.style.backgroundColor = colorInput.value;
+      const color = colorInput.value;
+      currentCard.style.backgroundColor = color;
+  
+      const noteId = currentCard.getAttribute('data-note-id');
+      fetch(`/note/color/${noteId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ color })
+      });
     }
-  });
+  });  
 
   // Close window
   closeBtn.addEventListener('click', () => {
@@ -143,4 +151,14 @@ document.getElementById('listViewBtn').addEventListener('click', function() {
   document.getElementById('notesContainer').classList.remove('grid-view');
 });
 
+const theme = localStorage.getItem("theme") || "light"; // fallback to light
+
+fetch(`/note/color/${noteId}`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    color: selectedColor,
+    theme: theme
+  })
+});
 

@@ -14,7 +14,12 @@
 <div id="notesContainer" class="row grid-view">
   {% for note in notes %}
     <div class="col-12 col-md-2 grid-view-item mb-3"> <!-- 2/12 for grid view -->
-      <div class="card p-3 shadow-sm h-100 d-flex flex-column justify-content-between">
+      <div class="card p-3 shadow-sm h-100 d-flex flex-column justify-content-between"
+          data-note-id="{{ note[0] }}"
+          {% if note[3] %}
+            data-note-color="{{ note[3] }}"
+            style="background-color: {{ note[3] }}"
+          {% endif %}>
         <h5 class="card-title">{{ note[1] }}</h5> <!-- Only show the title -->
 
         <div class="d-flex flex-wrap gap-2 mt-2">
