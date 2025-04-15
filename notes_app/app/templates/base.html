@@ -15,9 +15,19 @@
     <div class="collapse navbar-collapse">
       <ul class="navbar-nav ms-auto">
         {% if current_user.is_authenticated %}
-          <li class="nav-item">
-            <a class="btn btn-sm btn-outline-danger ms-3" href="{{ url_for('logout') }}" id="logoutButton">Logout</a>
-          </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 text-white" href="#" role="button" data-bs-toggle="dropdown">
+            <div class="avatar-circle bg-light text-dark fw-bold">
+              {{ current_user.display_name[0]|upper }}
+            </div>
+            {{ current_user.display_name }}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="{{ url_for('profile') }}">Profile</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}">Logout</a></li>
+          </ul>
+        </li>        
         {% else %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('login') }}">Login</a>

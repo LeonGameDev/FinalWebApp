@@ -21,7 +21,7 @@ def register():
     email = ''
     if request.method == 'POST':
         email = request.form['email']
-        display_name = request.form['display_name']
+        display_name = email.split('@')[0]  
         password = request.form['password']
         confirm = request.form['confirm_password']
         
@@ -35,7 +35,8 @@ def register():
         cur = mysql.connection.cursor()
         cur.execute("SELECT id FROM users WHERE email=%s", (email,))
         if cur.fetchone():
-            message = 'Email already exists.'
+            flash("Email already exists.", "danger")
+            return redirect(url_for('register'))
         else:
             cur.execute("INSERT INTO users (email, display_name, password, verification_token) VALUES (%s, %s, %s, %s)",
                         (email, display_name, hashed_pw, token))
@@ -191,3 +192,16 @@ def update_note_color(note_id):
     mysql.connection.commit()
     return jsonify({"success": True})
 
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    message = ''
+    if request.method == 'POST':
+        new_name = request.form['display_name']
+        cur = mysql.connection.cursor()
+        cur.execute("UPDATE users SET display_name = %s WHERE id = %s", (new_name, current_user.id))
+        mysql.connection.commit()
+        flash("Display name updated!", "success")
+        return redirect(url_for('profile'))
+
+    return render_template('profile.html')
