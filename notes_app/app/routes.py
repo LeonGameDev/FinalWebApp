@@ -17,43 +17,53 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for('home'))
 
-    message = ''
-    email = ''
     if request.method == 'POST':
         email = request.form['email']
-        display_name = email.split('@')[0]  
+        display_name = request.form['display_name']
         password = request.form['password']
         confirm = request.form['confirm_password']
-        
+
+        # Check password match
         if password != confirm:
-            message = 'Passwords do not match.'
-            return render_template('register.html', message=message)
-        
-        hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
-        token = str(uuid.uuid4())
+            flash("Passwords do not match.", "danger")
+            return redirect(url_for('register'))
 
         cur = mysql.connection.cursor()
+
+        # Check if email already exists
         cur.execute("SELECT id FROM users WHERE email=%s", (email,))
         if cur.fetchone():
             flash("Email already exists.", "danger")
             return redirect(url_for('register'))
-        else:
-            cur.execute("INSERT INTO users (email, display_name, password, verification_token) VALUES (%s, %s, %s, %s)",
-                        (email, display_name, hashed_pw, token))
-            mysql.connection.commit()
 
-            # Send verification email
-            msg = Message('Verify Your Account',
-                          sender='your.email@gmail.com',
-                          recipients=[email])
-            link = request.host_url + 'verify/' + token
-            msg.body = f'Click the link to verify your account: {link}'
-            mail.send(msg)
+        # Check if display name already exists
+        cur.execute("SELECT id FROM users WHERE display_name=%s", (display_name,))
+        if cur.fetchone():
+            flash("Display name already taken.", "danger")
+            return redirect(url_for('register'))
 
-            flash("Check your email to verify your account.", "info")
-            return  redirect(url_for('register', email = email))
-        
-    return render_template('register.html', message=message, registered_email=email)
+        # All good — save the user
+        hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
+        token = str(uuid.uuid4())
+
+        cur.execute("""
+            INSERT INTO users (email, display_name, password, verification_token)
+            VALUES (%s, %s, %s, %s)
+        """, (email, display_name, hashed_pw, token))
+        mysql.connection.commit()
+
+        # Send verification email
+        msg = Message('Verify Your Account',
+                      sender='your.email@gmail.com',
+                      recipients=[email])
+        link = request.host_url + 'verify/' + token
+        msg.body = f'Click the link to verify your account: {link}'
+        mail.send(msg)
+
+        flash("Check your email to verify your account.", "info")
+        return redirect(url_for('register'))
+
+    return render_template('register.html')
 
 from flask_login import login_user
 from app.models import User
@@ -150,9 +160,9 @@ def reset_password(token):
     message = ''
     if request.method == 'POST':
         password = request.form['password']
-        confirm = request.form['confirm']
+        confirm = request.form['confirm_password']
         if password != confirm:
-            message = 'Passwords do not match.'
+            flash("Passwords do not match.", "danger")
         else:
             hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
             cur = mysql.connection.cursor()
