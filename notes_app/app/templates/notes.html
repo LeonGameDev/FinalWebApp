@@ -1,7 +1,29 @@
 {% extends "base.html" %}
 {% block title %}My Notes{% endblock %}
+
 {% block content %}
+<style>
+  #liveSearchBar {
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateY(-20px) translateX(-50%);
+    pointer-events: none;
+  }
+
+  #liveSearchBar.active {
+    opacity: 1;
+    transform: translateY(0) translateX(-50%);
+    pointer-events: all;
+  }
+</style>
+
 <h2 class="mb-4">Your Notes</h2>
+
+<div id="liveSearchBar" class="position-fixed top-0 start-50 translate-middle-x mt-3 shadow-sm"
+     style="z-index: 1000; width: 300px;">
+  <input type="text" id="liveSearchInput" class="form-control" placeholder="Search notes...">
+</div>
+<p id="noResults" class="text-muted text-center mt-3" style="display: none;">No results found.</p>
 
 <!-- View toggle buttons -->
 <div class="mb-3">
@@ -13,19 +35,16 @@
 
 <div id="notesContainer" class="row grid-view">
   {% for note in notes %}
-    <div class="col-12 col-md-2 grid-view-item mb-3"> <!-- 2/12 for grid view -->
+    <div class="col-12 col-md-2 grid-view-item mb-3" data-title="{{ note[1]|lower }}">
       <div class="card p-3 shadow-sm h-100 d-flex flex-column justify-content-between"
-          data-note-id="{{ note[0] }}"
-          {% if note[3] %}
-            data-note-color="{{ note[3] }}"
-            style="background-color: {{ note[3] }}"
-          {% endif %}>
-        <h5 class="card-title">{{ note[1] }}</h5> <!-- Only show the title -->
-
+           data-note-id="{{ note[0] }}"
+           {% if note[3] %}
+             data-note-color="{{ note[3] }}"
+             style="background-color: {{ note[3] }}"
+           {% endif %}>
+        <h5 class="card-title">{{ note[1] }}</h5>
         <div class="d-flex flex-wrap gap-2 mt-2">
-          <button class="btn btn-sm btn-outline-secondary color-palette me-2" title="Change Color">
-            🎨
-          </button>
+          <button class="btn btn-sm btn-outline-secondary color-palette me-2" title="Change Color">🎨</button>
           <input type="color" class="form-control form-control-color color-picker d-none" value="#ffffff">
           <a href="{{ url_for('edit_note', note_id=note[0]) }}" class="btn btn-sm btn-outline-info me-2">Edit</a>
           <a href="{{ url_for('delete_note', note_id=note[0]) }}" class="btn btn-sm btn-outline-danger">Delete</a>
@@ -37,7 +56,48 @@
   {% endfor %}
 </div>
 
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const searchBar = document.getElementById("liveSearchBar");
+    const searchInput = document.getElementById("liveSearchInput");
+    const noResults = document.getElementById("noResults");
+
+    document.addEventListener("keydown", (e) => {
+      const tag = e.target.tagName.toLowerCase();
+      if (tag !== "input" && tag !== "textarea" && e.key.length === 1) {
+        e.preventDefault();
+        searchBar.classList.add("active");
+        searchInput.focus();
+        searchInput.value = e.key;
+        searchInput.dispatchEvent(new Event("input"));
+      }
+
+      if (e.key === "Escape") {
+        searchBar.classList.remove("active");
+        searchInput.value = "";
+        filterNotes("");
+      }
+    });
+
+    searchInput.addEventListener("input", function () {
+      const val = this.value.toLowerCase();
+      filterNotes(val);
+    });
+
+    function filterNotes(text) {
+      let found = false;
+      document.querySelectorAll("[data-title]").forEach(card => {
+        const title = card.getAttribute("data-title");
+        const match = title.includes(text);
+        card.style.display = match ? "" : "none";
+        if (match) found = true;
+      });
+      noResults.style.display = found ? "none" : "block";
+    }
+  });
+</script>
 {% endblock %}
+
 <div class="color-picker-window" style="display: none;">
   <div class="color-picker-header">
     <span>Pick a Color</span>
@@ -45,4 +105,7 @@
   </div>
   <input type="color" class="hidden-color-input">
 </div>
+
 <script src="{{ url_for('static', filename='main.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6"></script>
+
