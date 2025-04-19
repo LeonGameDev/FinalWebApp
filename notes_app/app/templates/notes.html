@@ -17,6 +17,17 @@
     pointer-events: all;
     visibility: visible;
   }
+
+  #noteActionToolbar {
+  display: none;
+  }
+
+
+  #noteActionToolbar button {
+  padding: 2px 10px;
+  font-size: 14px;
+  white-space: nowrap;
+  }
 </style>
 
 <h2 class="mb-4">Your Notes</h2>
@@ -58,45 +69,104 @@
   {% endfor %}
 </div>
 
+<div id="noteActionToolbar" class="position-absolute d-flex flex-wrap gap-2 shadow p-2 bg-light border rounded"
+style="display: none; z-index: 1100;">
+<button class="btn btn-sm btn-outline-info" id="editBtn">✏️ Edit</button>
+<button class="btn btn-sm btn-outline-warning" id="pinBtn">📌 Pin</button>
+<button class="btn btn-sm btn-outline-secondary" id="deleteBtn">🗑️ Delete</button>
+</div>
+
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const searchBar = document.getElementById("liveSearchBar");
-    const searchInput = document.getElementById("liveSearchInput");
-    const noResults = document.getElementById("noResults");
-
-    document.addEventListener("keydown", (e) => {
-      const tag = e.target.tagName.toLowerCase();
-      if (tag !== "input" && tag !== "textarea" && e.key.length === 1) {
-        e.preventDefault();
-        searchBar.classList.add("active");
-        searchInput.focus();
-        searchInput.value += e.key;
-        searchInput.dispatchEvent(new Event("input"));
-      }
-
-      if (e.key === "Escape") {
-        searchBar.classList.remove("active");
-        searchInput.value = "";
-        filterNotes("");
-      }
+document.addEventListener("DOMContentLoaded", () => {
+  const toolbar = document.getElementById("noteActionToolbar");
+  const searchBar = document.getElementById("liveSearchBar");
+  const searchInput = document.getElementById("liveSearchInput");
+  const noResults = document.getElementById("noResults");
+  const cards = document.querySelectorAll(".card");
+  let longPressTimer = null;
+  let activeNote = null;
+  let toolbarShown = false;
+  // === Long Press Handler ===
+  document.querySelectorAll(".card").forEach(card => {
+    card.addEventListener("mousedown", (e) => {
+      longPressTimer = setTimeout(() => {
+        activeNote = card;
+        const rect = card.getBoundingClientRect();
+        toolbar.style.left = `${rect.left + window.scrollX}px`;
+        toolbar.style.top = `${rect.top + window.scrollY - 50}px`;
+        toolbar.style.display = "flex";
+      }, 500);
     });
 
-    searchInput.addEventListener("input", function () {
-      const val = this.value.toLowerCase();
-      filterNotes(val);
-    });
+    card.addEventListener("mouseup", () => clearTimeout(longPressTimer));
+    card.addEventListener("mouseleave", () => clearTimeout(longPressTimer));
+  });
 
-    function filterNotes(text) {
-      let found = false;
-      document.querySelectorAll("[data-title]").forEach(card => {
-        const title = card.getAttribute("data-title");
-        const match = title.includes(text);
-        card.style.display = match ? "" : "none";
-        if (match) found = true;
-      });
-      noResults.style.display = found ? "none" : "block";
+  // === Toolbar Actions ===
+  document.getElementById("editBtn").addEventListener("click", () => {
+    if (activeNote) {
+      const id = activeNote.dataset.noteId;
+      window.location.href = `/note/edit/${id}`;
     }
   });
+
+  document.getElementById("deleteBtn").addEventListener("click", () => {
+    if (activeNote && confirm("Delete this note?")) {
+      const id = activeNote.dataset.noteId;
+      window.location.href = `/note/delete/${id}`;
+    }
+  });
+
+  document.getElementById("pinBtn").addEventListener("click", () => alert("Pin coming soon"));
+
+  // Prevent toolbar from disappearing when clicking buttons
+  toolbar.addEventListener("click", e => e.stopPropagation());
+
+  // Better: hide toolbar when clicking outside both toolbar AND the active note
+  document.addEventListener("click", (e) => {
+    const clickedInsideToolbar = toolbar.contains(e.target);
+    const clickedCard = activeNote && activeNote.contains(e.target);
+
+    if (!clickedInsideToolbar && !clickedCard) {
+      toolbar.style.display = "none";
+      activeNote = null;
+    }
+  });
+
+  // === Live Search Handler ===
+  document.addEventListener("keydown", (e) => {
+    const tag = e.target.tagName.toLowerCase();
+    if (tag !== "input" && tag !== "textarea" && e.key.length === 1) {
+      e.preventDefault();
+      searchBar.classList.add("active");
+      searchInput.focus();
+      searchInput.value += e.key;
+      searchInput.dispatchEvent(new Event("input"));
+    }
+
+    if (e.key === "Escape") {
+      searchBar.classList.remove("active");
+      searchInput.value = "";
+      filterNotes("");
+    }
+  });
+
+  searchInput.addEventListener("input", function () {
+    const val = this.value.toLowerCase();
+    filterNotes(val);
+  });
+
+  function filterNotes(text) {
+    let found = false;
+    document.querySelectorAll("[data-title]").forEach(card => {
+      const title = card.getAttribute("data-title");
+      const match = title.includes(text);
+      card.style.display = match ? "" : "none";
+      if (match) found = true;
+    });
+    noResults.style.display = found ? "none" : "block";
+  }
+});
 </script>
 {% endblock %}
 
