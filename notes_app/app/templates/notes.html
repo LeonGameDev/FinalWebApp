@@ -8,12 +8,14 @@
     opacity: 0;
     transform: translateY(-20px) translateX(-50%);
     pointer-events: none;
+    visibility: hidden;
   }
 
   #liveSearchBar.active {
     opacity: 1;
     transform: translateY(0) translateX(-50%);
     pointer-events: all;
+    visibility: visible;
   }
 </style>
 
@@ -68,7 +70,7 @@
         e.preventDefault();
         searchBar.classList.add("active");
         searchInput.focus();
-        searchInput.value = e.key;
+        searchInput.value += e.key;
         searchInput.dispatchEvent(new Event("input"));
       }
 

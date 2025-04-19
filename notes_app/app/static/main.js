@@ -151,14 +151,4 @@ document.getElementById('listViewBtn').addEventListener('click', function() {
   document.getElementById('notesContainer').classList.remove('grid-view');
 });
 
-const theme = localStorage.getItem("theme") || "light"; // fallback to light
-
-fetch(`/note/color/${noteId}`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    color: selectedColor,
-    theme: theme
-  })
-});
 
