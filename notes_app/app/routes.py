@@ -117,7 +117,12 @@ def login():
 @login_required
 def home():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT id, title, content, color FROM notes WHERE user_id = %s", (current_user.id,))
+    cur.execute("""
+        SELECT id, title, content, color, pinned
+        FROM notes
+        WHERE user_id = %s
+        ORDER BY pinned DESC, id DESC
+    """, (current_user.id,))
     user_notes = cur.fetchall()
     return render_template('notes.html', notes=user_notes)
 
@@ -215,3 +220,16 @@ def profile():
         return redirect(url_for('profile'))
 
     return render_template('profile.html')
+
+@app.route('/note/pin/<int:note_id>', methods=['POST'])
+@login_required
+def toggle_pin(note_id):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT pinned FROM notes WHERE id = %s AND user_id = %s", (note_id, current_user.id))
+    result = cur.fetchone()
+    if result:
+        new_status = not result[0]
+        cur.execute("UPDATE notes SET pinned = %s WHERE id = %s", (new_status, note_id))
+        mysql.connection.commit()
+        return jsonify({"success": True, "pinned": new_status})
+    return jsonify({"success": False})

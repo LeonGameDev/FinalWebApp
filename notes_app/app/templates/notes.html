@@ -49,12 +49,15 @@
 <div id="notesContainer" class="row grid-view">
   {% for note in notes %}
     <div class="col-12 col-md-2 grid-view-item mb-3" data-title="{{ note[1]|lower }}">
-      <div class="card p-3 shadow-sm h-100 d-flex flex-column justify-content-between"
+      <div class="card position-relative p-3 shadow-sm h-100 d-flex flex-column justify-content-between {% if note[4] %} pinned {% endif %}"
            data-note-id="{{ note[0] }}"
            {% if note[3] %}
              data-note-color="{{ note[3] }}"
              style="background-color: {{ note[3] }}"
            {% endif %}>
+          {% if note[4] %}
+            <div class="position-absolute top-0 end-0 p-2 text-warning" style="font-size: 1.2rem;">📌</div>
+          {% endif %}
         <h5 class="card-title">{{ note[1] }}</h5>
         <div class="d-flex flex-wrap gap-2 mt-2">
           <button class="btn btn-sm btn-outline-secondary color-palette me-2" title="Change Color">🎨</button>
@@ -72,7 +75,9 @@
 <div id="noteActionToolbar" class="position-absolute d-flex flex-wrap gap-2 shadow p-2 bg-light border rounded"
 style="display: none; z-index: 1100;">
 <button class="btn btn-sm btn-outline-info" id="editBtn">✏️ Edit</button>
-<button class="btn btn-sm btn-outline-warning" id="pinBtn">📌 Pin</button>
+<button class="btn btn-sm btn-outline-warning" id="pinBtn">
+  <span id="pinIcon">📌</span> <span id="pinText">Pin</span>
+</button>
 <button class="btn btn-sm btn-outline-secondary" id="deleteBtn">🗑️ Delete</button>
 </div>
 
@@ -91,6 +96,16 @@ document.addEventListener("DOMContentLoaded", () => {
     card.addEventListener("mousedown", (e) => {
       longPressTimer = setTimeout(() => {
         activeNote = card;
+
+        const pinText = document.getElementById("pinText");
+        const pinIcon = document.getElementById("pinIcon");
+        const isPinned = activeNote.classList.contains("pinned");
+
+        if (pinText && pinIcon) {
+          pinText.textContent = isPinned ? "Unpin" : "Pin";
+          pinIcon.textContent = isPinned ? "📌" : "📍";
+        }
+
         const rect = card.getBoundingClientRect();
         toolbar.style.left = `${rect.left + window.scrollX}px`;
         toolbar.style.top = `${rect.top + window.scrollY - 50}px`;
@@ -117,7 +132,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  document.getElementById("pinBtn").addEventListener("click", () => alert("Pin coming soon"));
+  document.getElementById("pinBtn").addEventListener("click", () => {
+  if (activeNote) {
+    const id = activeNote.dataset.noteId;
+    fetch(`/note/pin/${id}`, { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // Update button label
+          const pinText = document.getElementById("pinText");
+          const pinIcon = document.getElementById("pinIcon");
+          const isPinned = activeNote.classList.contains("pinned");
+
+          if (pinText && pinIcon) {
+            pinText.textContent = isPinned ? "Unpin" : "Pin";
+            pinIcon.textContent = isPinned ? "📌" : "📍";
+          }
+
+          // Optionally reload to reorder notes
+          location.reload();
+        }
+      });
+  }
+});
 
   // Prevent toolbar from disappearing when clicking buttons
   toolbar.addEventListener("click", e => e.stopPropagation());
@@ -167,6 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
     noResults.style.display = found ? "none" : "block";
   }
 });
+
 </script>
 {% endblock %}
 
