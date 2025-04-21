@@ -118,7 +118,7 @@ def login():
 def home():
     cur = mysql.connection.cursor()
     cur.execute("""
-        SELECT id, title, content, color, pinned
+        SELECT id, title, content, color, pinned, is_locked
         FROM notes
         WHERE user_id = %s
         ORDER BY pinned DESC, id DESC
