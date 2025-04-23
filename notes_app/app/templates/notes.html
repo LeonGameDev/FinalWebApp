@@ -68,7 +68,7 @@
         <li><a class="dropdown-item sort-option" href="#" data-sort="asc">A-Z</a></li>
         <li><a class="dropdown-item sort-option" href="#" data-sort="desc">Z-A</a></li>
       </ul>
-    </div>
+    </div>    
 
     <button id="gridViewBtn" class="btn btn-outline-primary">
       <i class="bi bi-grid-3x2-gap-fill"></i>
@@ -135,7 +135,7 @@
 </div>
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='notes.js') }}"></script>
-<script src="{{ url_for('static', filename='main.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6"></script>
+<script src="{{ url_for('static', filename='main.js') }}"></script>
+<script src="{{ url_for('static', filename='notes.js') }}"></script>
 {% endblock %}
