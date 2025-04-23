@@ -150,5 +150,27 @@ document.querySelectorAll('.locked-overlay').forEach(overlay => {
   });
 });
 
+document.querySelectorAll(".sort-option").forEach(option => {
+  option.addEventListener("click", function(e) {
+    e.preventDefault();
+    const direction = this.dataset.sort;
+    sortNotes(direction);
+  });
+});
+
+function sortNotes(order = "asc") {
+  const container = document.getElementById("notesContainer");
+  const items = Array.from(container.children);
+
+  const sorted = items.sort((a, b) => {
+    const titleA = a.dataset.title.trim();
+    const titleB = b.dataset.title.trim();
+    return order === "asc" ? titleA.localeCompare(titleB) : titleB.localeCompare(titleA);
+  });
+
+  container.innerHTML = "";
+  sorted.forEach(note => container.appendChild(note));
+}
+
 
   
