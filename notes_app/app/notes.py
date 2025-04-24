@@ -1,8 +1,9 @@
 from flask import render_template, request, redirect, url_for
 from flask_login import login_required, current_user
 from app import app, mysql
+from datetime import datetime
+import requests
 import time
-timestamp = int(time.time())
 
 @app.route('/note/new', methods=['GET', 'POST'])
 @login_required
@@ -10,6 +11,20 @@ def new_note():
     if request.method == 'POST':
         title = request.form['title']
         content = request.form['content']
+
+        try:
+            # Fetch the current time from TimeAPI
+            response = requests.get("https://timeapi.io/api/Time/current/zone?timeZone=UTC", timeout=10)
+            response.raise_for_status()
+            time_data = response.json()
+            # Convert the datetime string to a datetime object
+            api_time = datetime.fromisoformat(time_data["dateTime"])
+            # Convert the datetime object to a Unix timestamp
+            timestamp = int(api_time.timestamp())
+        except (requests.exceptions.RequestException, ValueError):
+            print("Offline!")
+            timestamp = int(time.time())
+
         cur = mysql.connection.cursor()
         cur.execute("INSERT INTO notes (user_id, title, content, created_at) VALUES (%s, %s, %s, %s)",
                     (current_user.id, title, content, timestamp))
