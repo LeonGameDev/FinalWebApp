@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 21, 2025 at 03:38 AM
+-- Generation Time: Apr 24, 2025 at 08:42 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -35,27 +35,29 @@ CREATE TABLE `notes` (
   `color` varchar(7) DEFAULT NULL,
   `pinned` tinyint(1) DEFAULT 0,
   `is_locked` tinyint(1) DEFAULT 0,
-  `lock_password_hash` text DEFAULT NULL
+  `lock_password_hash` text DEFAULT NULL,
+  `created_at` bigint(20) UNSIGNED DEFAULT unix_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `notes`
 --
 
-INSERT INTO `notes` (`id`, `user_id`, `title`, `content`, `color`, `pinned`, `is_locked`, `lock_password_hash`) VALUES
-(2, 1, 'Second Note', 'More text for the second note.', '#16b192', 0, 0, NULL),
-(4, 1, 'Meeting Notes', 'Discussed project timeline, assigned tasks.', '#d2cc19', 0, 0, NULL),
-(5, 1, 'Shopping List', 'Eggs, Bread, Milk, Coffee', '#62c520', 0, 0, NULL),
-(6, 1, 'Study Plan', '1. Flask basics\n2. SQL joins\n3. Flask-Login', '#d69a9a', 0, 0, NULL),
-(7, 1, 'Workout Routine', 'Pushups, Situps, Squats, Plank', '#92289a', 0, 0, NULL),
-(8, 1, 'Books to Read', 'Clean Code, Atomic Habits, Deep Work', '#8593d5', 0, 0, NULL),
-(9, 1, 'Birthday Plans', 'Book a table, invite friends, get a cake', NULL, 0, 0, NULL),
-(10, 1, 'Website Ideas', 'Note-taking app, To-do tracker, Budget planner', NULL, 0, 0, NULL),
-(11, 1, 'Code Snippets', 'Remember how to hash passwords with bcrypt', NULL, 0, 0, NULL),
-(12, 1, 'Quotes', '“Simplicity is the soul of efficiency.” – Austin Freeman', NULL, 0, 0, NULL),
-(13, 1, 'Bug Log', 'Login page redirect fails when already logged in', NULL, 0, 0, NULL),
-(14, 1, 'John Corner', 'My name is John', NULL, 0, 0, NULL),
-(15, 1, 'John', 'John Corner\r\n', NULL, 0, 0, NULL);
+INSERT INTO `notes` (`id`, `user_id`, `title`, `content`, `color`, `pinned`, `is_locked`, `lock_password_hash`, `created_at`) VALUES
+(2, 1, 'Second Note', 'More text for the second note.', '#16b192', 0, 0, NULL, 1700000000),
+(4, 1, 'Meeting Notes', 'Discussed project timeline, assigned tasks.', '#d2cc19', 0, 0, NULL, 1701000000),
+(5, 1, 'Shopping List', 'Eggs, Bread, Milk, Coffee', '#62c520', 0, 0, NULL, 1702000000),
+(6, 1, 'Study Plan', '1. Flask basics\n2. SQL joins\n3. Flask-Login', '#d69a9a', 0, 0, NULL, 1703000000),
+(7, 1, 'Workout Routine', 'Pushups, Situps, Squats, Plank', '#92289a', 0, 0, NULL, 170400000),
+(8, 1, 'Books to Read', 'Clean Code, Atomic Habits, Deep Work', '#8593d5', 0, 0, NULL, 1705000000),
+(9, 1, 'Birthday Plans', 'Book a table, invite friends, get a cake', NULL, 0, 0, NULL, 1706000000),
+(10, 1, 'Website Ideas', 'Note-taking app, To-do tracker, Budget planner', NULL, 0, 0, NULL, 1707000000),
+(11, 1, 'Code Snippets', 'Remember how to hash passwords with bcrypt', NULL, 0, 0, NULL, 1708000000),
+(12, 1, 'Quotes', '“Simplicity is the soul of efficiency.” – Austin Freeman', NULL, 0, 0, NULL, 1709000000),
+(13, 1, 'Bug Log', 'Login page redirect fails when already logged in', NULL, 0, 0, NULL, 1710000000),
+(14, 1, 'John Corner', 'My name is John', NULL, 0, 0, NULL, 1711000000),
+(15, 1, 'John', 'John Corner\r\n', NULL, 0, 0, NULL, 1712000000),
+(19, 1, 'My Example Time 1:32', '', NULL, 0, 0, NULL, 1713000000);
 
 -- --------------------------------------------------------
 
@@ -106,7 +108,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `notes`
 --
 ALTER TABLE `notes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `users`

@@ -1,6 +1,8 @@
 from flask import render_template, request, redirect, url_for
 from flask_login import login_required, current_user
 from app import app, mysql
+import time
+timestamp = int(time.time())
 
 @app.route('/note/new', methods=['GET', 'POST'])
 @login_required
@@ -9,8 +11,8 @@ def new_note():
         title = request.form['title']
         content = request.form['content']
         cur = mysql.connection.cursor()
-        cur.execute("INSERT INTO notes (user_id, title, content) VALUES (%s, %s, %s)",
-                    (current_user.id, title, content))
+        cur.execute("INSERT INTO notes (user_id, title, content, created_at) VALUES (%s, %s, %s, %s)",
+                    (current_user.id, title, content, timestamp))
         mysql.connection.commit()
         return redirect(url_for('home'))
     return render_template('note_form.html', note=None)

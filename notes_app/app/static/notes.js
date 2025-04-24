@@ -97,8 +97,16 @@ document.addEventListener("DOMContentLoaded", () => {
       return order === "asc" ? titleA.localeCompare(titleB) : titleB.localeCompare(titleA);
     };
 
-    pinned.sort(sortByTitle);
-    unpinned.sort(sortByTitle);
+    const sortByTime = (a, b) => {
+      const timeA = parseInt(a.dataset.time);
+      const timeB = parseInt(b.dataset.time);
+      return order === "newest" ? timeB - timeA : timeA - timeB;
+    };
+
+    const sortFn = order === "asc" || order === "desc" ? sortByTitle : sortByTime;
+
+    pinned.sort(sortFn);
+    unpinned.sort(sortFn);
 
     notesContainer.innerHTML = "";
     [...pinned, ...unpinned].forEach(item => notesContainer.appendChild(item));
@@ -177,4 +185,6 @@ document.addEventListener("DOMContentLoaded", () => {
       reorderNotes(direction);  // Reorder notes based on sort direction
     });
   });
+
+  reorderNotes("asc");
 });

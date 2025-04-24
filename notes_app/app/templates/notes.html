@@ -48,6 +48,38 @@
   cursor: pointer;
 }
 
+.dropdown-menu {
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: none;
+    padding: 0.25rem 0;
+    background-color: var(--bs-body-bg); /* Supports light/dark themes */
+  }
+
+  .dropdown-item {
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    color: var(--bs-body-color);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .dropdown-item:hover,
+  .dropdown-item:focus {
+    background-color: var(--bs-primary-bg-subtle); /* Lighter primary tint */
+    color: var(--bs-primary);
+  }
+
+  .dropdown-item.active,
+  .dropdown-item.active:hover {
+    background-color: var(--bs-primary);
+    color: #fff;
+  }
+
+  .dropdown-divider {
+    margin: 0.25rem 0;
+    border-top: 1px solid var(--bs-border-color);
+  }
+
 </style>
 
 <h2 class="mb-4">Your Notes</h2>
@@ -67,6 +99,8 @@
       <ul class="dropdown-menu">
         <li><a class="dropdown-item sort-option" href="#" data-sort="asc">A-Z</a></li>
         <li><a class="dropdown-item sort-option" href="#" data-sort="desc">Z-A</a></li>
+        <li><a class="dropdown-item sort-option" href="#" data-sort="newest">Newest</a></li>
+        <li><a class="dropdown-item sort-option" href="#" data-sort="oldest">Oldest</a></li>
       </ul>
     </div>    
 
@@ -82,7 +116,7 @@
 
 <div id="notesContainer" class="row grid-view">
   {% for note in notes %}
-    <div class="col-12 col-md-2 grid-view-item mb-3" data-title="{{ note[1]|lower }}">
+    <div class="col-12 col-md-2 grid-view-item mb-3" data-title="{{ note[1]|lower }}" data-time="{{ note[6] }}">
       <div class="card position-relative p-3 shadow-sm h-100 d-flex flex-column justify-content-between {% if note[4] %}pinned{% endif %}" 
            data-note-id="{{ note[0] }}"
            {% if note[3] %}
