@@ -122,7 +122,8 @@
            {% if note[3] %}
              data-note-color="{{ note[3] }}"
              style="background-color: {{ note[3] }}"
-           {% endif %}>
+           {% endif %}
+           data-is-locked="{{ 1 if note[5] else 0 }}">
            <div class="locked-overlay d-none justify-content-center align-items-center">
             <i class="bi bi-lock-fill text-secondary" style="font-size: 2.5rem;"></i>
           </div> 

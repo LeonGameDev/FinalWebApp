@@ -11,13 +11,21 @@ document.addEventListener("DOMContentLoaded", () => {
   let activeNote = null;
 
   const unlockedNotes = JSON.parse(localStorage.getItem('unlockedNotes') || "[]");
-  unlockedNotes.forEach(id => {
-    const card = document.querySelector(`[data-note-id="${id}"]`);
-    if (card) {
-      const overlay = card.querySelector(".locked-overlay");
-      if (overlay) overlay.classList.add("d-none");
+
+  document.querySelectorAll('[data-note-id]').forEach(card => {
+    const noteId = card.dataset.noteId;
+    const isLocked = card.dataset.isLocked === "1";
+    const overlay = card.querySelector(".locked-overlay");
+
+    if (isLocked && !unlockedNotes.includes(noteId)) {
+      // Should stay locked
+      overlay.classList.remove('d-none');
+    } else {
+      // Unlocked (either no password or user unlocked)
+      overlay.classList.add('d-none');
     }
   });
+
 
   // Handle long press on notes to activate toolbar
   document.querySelectorAll(".card").forEach(card => {
