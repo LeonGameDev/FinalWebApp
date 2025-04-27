@@ -10,6 +10,15 @@ document.addEventListener("DOMContentLoaded", () => {
   let longPressTimer = null;
   let activeNote = null;
 
+  const unlockedNotes = JSON.parse(localStorage.getItem('unlockedNotes') || "[]");
+  unlockedNotes.forEach(id => {
+    const card = document.querySelector(`[data-note-id="${id}"]`);
+    if (card) {
+      const overlay = card.querySelector(".locked-overlay");
+      if (overlay) overlay.classList.add("d-none");
+    }
+  });
+
   // Handle long press on notes to activate toolbar
   document.querySelectorAll(".card").forEach(card => {
     card.addEventListener("mousedown", () => {
@@ -160,20 +169,66 @@ document.addEventListener("DOMContentLoaded", () => {
     noResults.style.display = found ? "none" : "block";
   }
 
-  // Lock button click handler
   document.querySelectorAll('.lock-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const card = btn.closest('.card');
       const overlay = card.querySelector('.locked-overlay');
-      overlay.classList.remove('d-none');
+      const noteId = card.dataset.noteId;
+  
+      const password = prompt("Set a password for this note:");
+      if (!password) return;
+  
+      const res = await fetch(`/note/lock/${noteId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+      });
+  
+      const data = await res.json();
+      if (data.success) {
+        overlay.classList.remove('d-none');
+  
+        // 🔒 Remove note from localStorage if it was unlocked before
+        let unlocked = JSON.parse(localStorage.getItem("unlockedNotes") || "[]");
+        const index = unlocked.indexOf(noteId);
+        if (index !== -1) {
+          unlocked.splice(index, 1);
+          localStorage.setItem("unlockedNotes", JSON.stringify(unlocked));
+        }
+      } else {
+        alert(data.message || "Failed to lock note.");
+      }
     });
-  });
+  });  
 
-  // Locked overlay click handler
   document.querySelectorAll('.locked-overlay').forEach(overlay => {
-    overlay.addEventListener('click', (e) => {
-      e.stopPropagation(); // prevent triggering other events
-      overlay.classList.add('d-none');
+    overlay.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const card = overlay.closest('.card');
+      const noteId = card.dataset.noteId;
+  
+      const password = prompt("Enter your password to unlock:");
+      if (!password) return;
+  
+      const res = await fetch(`/note/unlock/${noteId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+      });
+  
+      const data = await res.json();
+      if (data.success) {
+        overlay.classList.add('d-none');
+  
+        // Optional: remember unlocked note in localStorage
+        let unlocked = JSON.parse(localStorage.getItem("unlockedNotes") || "[]");
+        if (!unlocked.includes(noteId)) {
+          unlocked.push(noteId);
+          localStorage.setItem("unlockedNotes", JSON.stringify(unlocked));
+        }
+      } else {
+        alert(data.message || "Incorrect password.");
+      }
     });
   });
 
