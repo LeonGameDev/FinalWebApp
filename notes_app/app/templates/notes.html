@@ -46,9 +46,9 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-}
+  }
 
-.dropdown-menu {
+  .dropdown-menu {
     border-radius: 0.5rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     border: none;
@@ -78,6 +78,69 @@
   .dropdown-divider {
     margin: 0.25rem 0;
     border-top: 1px solid var(--bs-border-color);
+  }
+
+  .modal-content,
+  .modal-header,
+  .modal-footer {
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+  }
+
+  .modal-body input {
+    color: #e0e0e0;
+    border: 1px solid #3d3d3d;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .modal-body input:hover {
+    box-shadow: -4px 0 8px rgb(255, 255, 255), 4px 0 8px rgb(255, 255, 255);
+    transition: box-shadow 0.3s ease;
+  }
+
+  .modal-body input:focus{
+    border-color: #028cfd;
+  }
+
+  .modal-body input:not(:focus){
+    color: #000000;    
+  }
+
+  .btn-close {
+    filter: invert(1);
+  }
+
+  .modal-content::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .modal-content::-webkit-scrollbar-thumb {
+    background-color: #444;
+    border-radius: 4px;
+  }
+
+  @media (max-width: 576px) {
+    .modal-content {
+      padding: 0.75rem;
+    }
+  }
+
+  #lockSubmitBtn, #unlockSubmitBtn {
+    background-color: #1a1a1a !important; /* Dark background */
+    color: #4dabf7 !important;            /* Blue text */
+    border: 1px solid #4dabf7 !important;  /* Blue border */
+    border-radius: 0.5rem;
+    font-weight: 500;
+    padding: 0.4rem 1rem;
+    transition: all 0.3s ease;
+  }
+
+  /* Hover effect */
+  #lockSubmitBtn:hover, #unlockSubmitBtn:hover {
+    background-color: #4dabf7 !important; /* Blue background on hover */
+    color: #ffffff !important;            /* White text on hover */
+    box-shadow: 0 0 10px #4dabf7;
+    border-color: #4dabf7 !important;
   }
 
 </style>
@@ -170,7 +233,82 @@
 </div>
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6"></script>
+
+<!-- Unlock Modal -->
+<div class="modal fade" id="unlockModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content p-3">
+      <div class="modal-header">
+        <h5 class="modal-title">Unlock Note</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="password" id="unlockPassword" class="form-control" placeholder="Enter password">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="unlockShowPassword">
+          <label class="form-check-label" for="unlockShowPassword">Show password</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="unlockSubmitBtn" class="btn btn-primary">Unlock</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lock Password Modal -->
+<div class="modal fade" id="lockModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content p-3">
+      <div class="modal-header">
+        <h5 class="modal-title">Set Password for Note</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body d-flex flex-column gap-3">
+        <input type="password" id="lockPassword" class="form-control" placeholder="Enter password">
+        <input type="password" id="lockConfirm" class="form-control" placeholder="Confirm password">
+        
+        <!-- Show/Hide password toggle -->
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="lockShowPassword">
+          <label class="form-check-label" for="lockShowPassword">Show password</label>
+        </div>
+
+        <div id="lockError" class="text-danger small d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="lockSubmitBtn" class="btn btn-primary">Lock</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+><script>
+  // Show/Hide password for Unlock Modal
+document.getElementById('unlockShowPassword').addEventListener('change', function() {
+  var passwordField = document.getElementById('unlockPassword');
+  if (this.checked) {
+    passwordField.type = 'text';  // Show password
+  } else {
+    passwordField.type = 'password';  // Hide password
+  }
+});
+
+// Show/Hide password for Lock Modal
+document.getElementById('lockShowPassword').addEventListener('change', function() {
+  var lockPasswordField = document.getElementById('lockPassword');
+  var lockConfirmField = document.getElementById('lockConfirm');
+  if (this.checked) {
+    lockPasswordField.type = 'text';  // Show password
+    lockConfirmField.type = 'text';  // Show confirm password
+  } else {
+    lockPasswordField.type = 'password';  // Hide password
+    lockConfirmField.type = 'password';  // Hide confirm password
+  }
+});
+
+</script>
+
 <script src="{{ url_for('static', filename='main.js') }}"></script>
 <script src="{{ url_for('static', filename='notes.js') }}"></script>
 {% endblock %}

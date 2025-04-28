@@ -26,7 +26,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-
   // Handle long press on notes to activate toolbar
   document.querySelectorAll(".card").forEach(card => {
     card.addEventListener("mousedown", () => {
@@ -177,68 +176,185 @@ document.addEventListener("DOMContentLoaded", () => {
     noResults.style.display = found ? "none" : "block";
   }
 
+  // document.querySelectorAll('.lock-btn').forEach(btn => {
+  //   btn.addEventListener('click', async () => {
+  //     const card = btn.closest('.card');
+  //     const overlay = card.querySelector('.locked-overlay');
+  //     const noteId = card.dataset.noteId;
+  
+  //     const password = prompt("Set a password for this note:");
+  //     if (!password) return;
+  
+  //     const res = await fetch(`/note/lock/${noteId}`, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ password })
+  //     });
+  
+  //     const data = await res.json();
+  //     if (data.success) {
+  //       overlay.classList.remove('d-none');
+  
+  //       // 🔒 Remove note from localStorage if it was unlocked before
+  //       let unlocked = JSON.parse(localStorage.getItem("unlockedNotes") || "[]");
+  //       const index = unlocked.indexOf(noteId);
+  //       if (index !== -1) {
+  //         unlocked.splice(index, 1);
+  //         localStorage.setItem("unlockedNotes", JSON.stringify(unlocked));
+  //       }
+  //     } else {
+  //       alert(data.message || "Failed to lock note.");
+  //     }
+  //   });
+  // });  
+
+  // document.querySelectorAll('.locked-overlay').forEach(overlay => {
+  //   overlay.addEventListener('click', async (e) => {
+  //     e.stopPropagation();
+  //     const card = overlay.closest('.card');
+  //     const noteId = card.dataset.noteId;
+  
+  //     const password = prompt("Enter your password to unlock:");
+  //     if (!password) return;
+  
+  //     const res = await fetch(`/note/unlock/${noteId}`, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ password })
+  //     });
+  
+  //     const data = await res.json();
+  //     if (data.success) {
+  //       overlay.classList.add('d-none');
+  
+  //       // Optional: remember unlocked note in localStorage
+  //       let unlocked = JSON.parse(localStorage.getItem("unlockedNotes") || "[]");
+  //       if (!unlocked.includes(noteId)) {
+  //         unlocked.push(noteId);
+  //         localStorage.setItem("unlockedNotes", JSON.stringify(unlocked));
+  //       }
+  //     } else {
+  //       alert(data.message || "Incorrect password.");
+  //     }
+  //   });
+  // });
+  let unlockNoteId = null;
+
+  document.querySelectorAll('.locked-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const card = overlay.closest('.card');
+      unlockNoteId = card.dataset.noteId;
+
+      // Open modal
+      const modal = new bootstrap.Modal(document.getElementById('unlockModal'));
+      modal.show();
+    });
+  });
+
+  document.getElementById('unlockSubmitBtn').addEventListener('click', async () => {
+    const password = document.getElementById('unlockPassword').value.trim();
+    if (!password) return;
+
+    const res = await fetch(`/note/unlock/${unlockNoteId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      const card = document.querySelector(`[data-note-id="${unlockNoteId}"]`);
+      const overlay = card.querySelector('.locked-overlay');
+      overlay.classList.add('d-none');
+
+      // Update localStorage
+      let unlocked = JSON.parse(localStorage.getItem("unlockedNotes") || "[]");
+      if (!unlocked.includes(unlockNoteId)) {
+        unlocked.push(unlockNoteId);
+        localStorage.setItem("unlockedNotes", JSON.stringify(unlocked));
+      }
+
+      // Close modal
+      const modalEl = document.getElementById('unlockModal');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      modal.hide();
+      document.getElementById('unlockPassword').value = "";
+    } else {
+      alert(data.message || "Incorrect password.");
+    }
+  });
+
+  let lockNoteId = null;
+
+  // Open Lock Modal
   document.querySelectorAll('.lock-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', (e) => {
       const card = btn.closest('.card');
       const overlay = card.querySelector('.locked-overlay');
       const noteId = card.dataset.noteId;
-  
-      const password = prompt("Set a password for this note:");
-      if (!password) return;
-  
-      const res = await fetch(`/note/lock/${noteId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password })
-      });
-  
-      const data = await res.json();
-      if (data.success) {
-        overlay.classList.remove('d-none');
-  
-        // 🔒 Remove note from localStorage if it was unlocked before
-        let unlocked = JSON.parse(localStorage.getItem("unlockedNotes") || "[]");
-        const index = unlocked.indexOf(noteId);
-        if (index !== -1) {
-          unlocked.splice(index, 1);
-          localStorage.setItem("unlockedNotes", JSON.stringify(unlocked));
-        }
-      } else {
-        alert(data.message || "Failed to lock note.");
-      }
-    });
-  });  
 
-  document.querySelectorAll('.locked-overlay').forEach(overlay => {
-    overlay.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const card = overlay.closest('.card');
-      const noteId = card.dataset.noteId;
-  
-      const password = prompt("Enter your password to unlock:");
-      if (!password) return;
-  
-      const res = await fetch(`/note/unlock/${noteId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password })
-      });
-  
-      const data = await res.json();
-      if (data.success) {
-        overlay.classList.add('d-none');
-  
-        // Optional: remember unlocked note in localStorage
-        let unlocked = JSON.parse(localStorage.getItem("unlockedNotes") || "[]");
-        if (!unlocked.includes(noteId)) {
-          unlocked.push(noteId);
-          localStorage.setItem("unlockedNotes", JSON.stringify(unlocked));
-        }
-      } else {
-        alert(data.message || "Incorrect password.");
-      }
+      const isLocked = !overlay.classList.contains('d-none');
+      if (isLocked) return; // Don't allow re-lock if already locked
+
+      lockNoteId = noteId;
+      const modal = new bootstrap.Modal(document.getElementById('lockModal'));
+      modal.show();
     });
   });
+
+  // Submit Lock
+  document.getElementById('lockSubmitBtn').addEventListener('click', async () => {
+    const password = document.getElementById('lockPassword').value.trim();
+    const confirm = document.getElementById('lockConfirm').value.trim();
+    const errorDiv = document.getElementById('lockError');
+
+    // Validate password
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      errorDiv.textContent = "Password must be 8+ chars, include uppercase, lowercase, number, special character.";
+      errorDiv.classList.remove('d-none');
+      return;
+    }
+
+    if (password !== confirm) {
+      errorDiv.textContent = "Passwords do not match.";
+      errorDiv.classList.remove('d-none');
+      return;
+    }
+
+    errorDiv.classList.add('d-none');
+
+    const res = await fetch(`/note/lock/${lockNoteId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      const card = document.querySelector(`[data-note-id="${lockNoteId}"]`);
+      const overlay = card.querySelector('.locked-overlay');
+      overlay.classList.remove('d-none');
+
+      let unlocked = JSON.parse(localStorage.getItem("unlockedNotes") || []);
+      const index = unlocked.indexOf(lockNoteId);
+      if (index !== -1) {
+        unlocked.splice(index, 1);
+        localStorage.setItem("unlockedNotes", JSON.stringify(unlocked));
+      }
+
+      // Close modal
+      const modalEl = document.getElementById('lockModal');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      modal.hide();
+      document.getElementById('lockPassword').value = "";
+      document.getElementById('lockConfirm').value = "";
+    } else {
+      alert(data.message || "Failed to lock note.");
+    }
+  });
+
 
   // Add sort event listeners for the sort options
   document.querySelectorAll('.sort-option').forEach(option => {

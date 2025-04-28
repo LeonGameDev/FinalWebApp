@@ -88,5 +88,11 @@ def unlock_note(note_id):
     stored_hash = result[0].encode('utf-8')
 
     if bcrypt.checkpw(password.encode('utf-8'), stored_hash):
+        cur.execute("""
+            UPDATE notes
+            SET password_hash = NULL, is_locked = 0
+            WHERE id = %s AND user_id = %s
+        """, (note_id, current_user.id))
+        mysql.connection.commit()
         return jsonify({"success": True})
     return jsonify({"success": False, "message": "Wrong password"})
