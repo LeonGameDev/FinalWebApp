@@ -3,36 +3,87 @@ from flask_login import login_required, current_user
 from app import app, mysql
 import time
 
-@app.route('/note/new', methods=['GET', 'POST'])
-@login_required
-def new_note():
-    if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
-        timestamp = int(time.time())
+# @app.route('/note/new', methods=['GET', 'POST'])
+# @login_required
+# def new_note():
+#     if request.method == 'POST':
+#         title = request.form['title']
+#         content = request.form['content']
+#         timestamp = int(time.time())
 
-        cur = mysql.connection.cursor()
-        cur.execute("INSERT INTO notes (user_id, title, content, created_at) VALUES (%s, %s, %s, %s)",
-                    (current_user.id, title, content, timestamp))
-        mysql.connection.commit()
-        return redirect(url_for('home'))
-    return render_template('note_form.html', note=None)
+#         cur = mysql.connection.cursor()
+#         cur.execute("INSERT INTO notes (user_id, title, content, created_at) VALUES (%s, %s, %s, %s)",
+#                     (current_user.id, title, content, timestamp))
+#         mysql.connection.commit()
+#         return redirect(url_for('home'))
+#     return render_template('note_form.html', note=None)
 
-@app.route('/note/edit/<int:note_id>', methods=['GET', 'POST'])
+# @app.route('/note/edit/<int:note_id>', methods=['GET', 'POST'])
+# @login_required
+# def edit_note(note_id):
+#     cur = mysql.connection.cursor()
+#     if request.method == 'POST':
+#         title = request.form['title']
+#         content = request.form['content']
+#         cur.execute("UPDATE notes SET title=%s, content=%s WHERE id=%s AND user_id=%s",
+#                     (title, content, note_id, current_user.id))
+#         mysql.connection.commit()
+#         return redirect(url_for('home'))
+
+#     cur.execute("SELECT id, title, content FROM notes WHERE id=%s AND user_id=%s", (note_id, current_user.id))
+#     note = cur.fetchone()
+#     return render_template('note_form.html', note=note)
+# Replace your new_note and edit_note functions with these:
+
+@app.route('/note/save', methods=['POST'])
 @login_required
-def edit_note(note_id):
+def save_note():
+    data = request.get_json()
+    note_id = data.get('id')
+    title = data.get('title')
+    content = data.get('content')
+    
     cur = mysql.connection.cursor()
-    if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
-        cur.execute("UPDATE notes SET title=%s, content=%s WHERE id=%s AND user_id=%s",
-                    (title, content, note_id, current_user.id))
+    
+    if note_id:  # Update existing note
+        cur.execute("""
+            UPDATE notes 
+            SET title=%s, content=%s 
+            WHERE id=%s AND user_id=%s
+        """, (title, content, note_id, current_user.id))
         mysql.connection.commit()
-        return redirect(url_for('home'))
+        return jsonify({"success": True, "id": note_id})
+    else:  # Create new note
+        timestamp = int(time.time())
+        cur.execute("""
+            INSERT INTO notes (user_id, title, content, created_at) 
+            VALUES (%s, %s, %s, %s)
+        """, (current_user.id, title, content, timestamp))
+        mysql.connection.commit()
+        note_id = cur.lastrowid
+        return jsonify({"success": True, "id": note_id})
 
-    cur.execute("SELECT id, title, content FROM notes WHERE id=%s AND user_id=%s", (note_id, current_user.id))
+@app.route('/note/get/<int:note_id>')
+@login_required
+def get_note(note_id):
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT id, title, content 
+        FROM notes 
+        WHERE id=%s AND user_id=%s
+    """, (note_id, current_user.id))
     note = cur.fetchone()
-    return render_template('note_form.html', note=note)
+    
+    if note:
+        return jsonify({
+            "success": True,
+            "note": {
+                "id": note[0],
+                "title": note[1],
+                "content": note[2]
+            }
+        })
+    return jsonify({"success": False})
 
 @app.route('/note/delete/<int:note_id>')
 @login_required

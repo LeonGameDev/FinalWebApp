@@ -1,6 +1,254 @@
 console.log("Note loaded");
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Add these variables at the top of your notes.js
+let saveTimer = null;
+let currentNoteId = null;
+let hasUnsavedChanges = false;
+
+// Add these event listeners in your DOMContentLoaded callback
+document.getElementById('newNoteBtn').addEventListener('click', () => {
+  openNoteModal();
+});
+
+// Add these functions to your notes.js
+function openNoteModal(noteId = null) {
+  const modal = new bootstrap.Modal(document.getElementById('noteModal'));
+  const titleField = document.getElementById('noteTitle');
+  const contentField = document.getElementById('noteContent');
+  const modalTitle = document.getElementById('modalTitle');
+  const noteIdField = document.getElementById('noteId');
+  const saveStatus = document.getElementById('saveStatus');
+  
+  // Reset fields
+  titleField.value = '';
+  contentField.value = '';
+  noteIdField.value = '';
+  saveStatus.textContent = '';
+  currentNoteId = null;
+  
+  if (noteId) {
+    // Editing existing note
+    modalTitle.textContent = 'Edit Note';
+    noteIdField.value = noteId;
+    currentNoteId = noteId;
+    
+    // Fetch note content
+    fetch(`/note/get/${noteId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          titleField.value = data.note.title;
+          contentField.value = data.note.content;
+        }
+      });
+  } else {
+    // Creating new note
+    modalTitle.textContent = 'New Note';
+  }
+  
+  // Clear any existing timers
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  
+  // Set up auto-save listeners
+  titleField.addEventListener('input', scheduleSave);
+  contentField.addEventListener('input', scheduleSave);
+  
+  modal.show();
+}
+
+function scheduleSave() {
+  hasUnsavedChanges = true;
+  
+  // Clear any pending save
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+  }
+  
+  // Set new save timer (1 second after last change)
+  saveTimer = setTimeout(saveNote, 1000);
+  
+  // Update status
+  document.getElementById('saveStatus').textContent = 'Unsaved changes...';
+}
+
+function saveNote() {
+  const title = document.getElementById('noteTitle').value.trim();
+  const content = document.getElementById('noteContent').value.trim();
+  const noteId = document.getElementById('noteId').value;
+  const saveStatus = document.getElementById('saveStatus');
+  
+  if (!title || !content) {
+    saveStatus.textContent = 'Title and content are required';
+    return;
+  }
+  
+  const data = {
+    id: noteId || null,
+    title: title,
+    content: content
+  };
+  
+  fetch('/note/save', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      saveStatus.textContent = 'Saved';
+      hasUnsavedChanges = false;
+      
+      if (!noteId) {
+        // If this was a new note, update the ID
+        currentNoteId = data.id;
+        document.getElementById('noteId').value = data.id;
+        
+        // Add the new note to the UI
+        addNoteToUI(data.id, title, content);
+      } else {
+        // Update existing note in UI
+        updateNoteInUI(data.id, title, content);
+      }
+    } else {
+      saveStatus.textContent = 'Error saving note';
+    }
+  })
+  .catch(() => {
+    saveStatus.textContent = 'Error saving note';
+  });
+}
+
+function addNoteToUI(id, title, content) {
+  // Create a new note card and add it to the DOM
+  const notesContainer = document.getElementById('notesContainer');
+  const newNoteHtml = `
+    <div class="col-12 col-md-2 grid-view-item mb-3" data-title="${title.toLowerCase()}" data-time="${Math.floor(Date.now()/1000)}">
+      <div class="card position-relative p-3 shadow-sm h-100 d-flex flex-column justify-content-between" 
+           data-note-id="${id}">
+        <h5 class="card-title">${title}</h5>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+          <button class="btn btn-sm btn-outline-success color-palette me-2" title="Change Color">🎨</button>
+          <input type="color" class="form-control form-control-color color-picker d-none" value="#ffffff">
+          <button class="btn btn-sm btn-outline-danger lock-btn me-2" title="Lock/Unlock Note">
+            <i class="bi bi-shield-lock" style="font-size: 1rem;"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-primary share-btn me-2" title="Share Note">
+            <i class="bi bi-share" style="font-size: 1rem;"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  notesContainer.insertAdjacentHTML('afterbegin', newNoteHtml);
+}
+
+function updateNoteInUI(id, title, content) {
+  // Update an existing note in the UI
+  const noteElement = document.querySelector(`[data-note-id="${id}"]`);
+  if (noteElement) {
+    const titleElement = noteElement.querySelector('.card-title');
+    if (titleElement) {
+      titleElement.textContent = title;
+    }
+    noteElement.closest('[data-title]').dataset.title = title.toLowerCase();
+  }
+}
+
+// Add this to handle clicking on notes to edit them
+// document.addEventListener('click', (e) => {
+//   const card = e.target.closest('.card');
+//   if (card && !e.target.closest('.locked-overlay') && !e.target.closest('.btn')) {
+//     const noteId = card.dataset.noteId;
+//     openNoteModal(noteId);
+//   }
+// });
+  // Replace the existing card event listeners with this:
+  document.querySelectorAll(".card").forEach(card => {
+  let longPressActive = false;
+  let pressTimer;
+  const longPressDuration = 500; // milliseconds
+
+  // Handle mouse down (start of press)
+  card.addEventListener("mousedown", (e) => {
+    // Ignore if clicking on buttons or locked overlay
+    if (e.target.closest('.btn') || e.target.closest('.locked-overlay')) {
+      return;
+    }
+
+    // Start timer for long press
+    pressTimer = setTimeout(() => {
+      longPressActive = true;
+      activeNote = card;
+      updateToolbarContent(card);
+      showToolbar(card);
+    }, longPressDuration);
+  });
+
+  // Handle mouse up (end of press)
+  card.addEventListener("mouseup", (e) => {
+    clearTimeout(pressTimer);
+    
+    // If this wasn't a long press, handle as click
+    if (!longPressActive && !e.target.closest('.btn') && !e.target.closest('.locked-overlay')) {
+      const noteId = card.dataset.noteId;
+      openNoteModal(noteId);
+    }
+    
+    longPressActive = false;
+  });
+
+  // Handle mouse leave (cancel long press if mouse leaves)
+  card.addEventListener("mouseleave", () => {
+    clearTimeout(pressTimer);
+    longPressActive = false;
+  });
+
+  // Prevent text selection during long press
+  card.addEventListener("selectstart", (e) => {
+    if (pressTimer) {
+      e.preventDefault();
+    }
+  });
+  });
+
+
+// Add this to handle modal closing
+document.getElementById('noteModal').addEventListener('hidden.bs.modal', () => {
+  if (hasUnsavedChanges) {
+    const confirmClose = confirm('You have unsaved changes. Close anyway?');
+    if (!confirmClose) {
+      // Reopen modal if user wants to keep editing
+      setTimeout(() => {
+        const modal = new bootstrap.Modal(document.getElementById('noteModal'));
+        modal.show();
+      }, 10);
+      return;
+    }
+  }
+  
+  // Clean up
+  const titleField = document.getElementById('noteTitle');
+  const contentField = document.getElementById('noteContent');
+  
+  titleField.removeEventListener('input', scheduleSave);
+  contentField.removeEventListener('input', scheduleSave);
+  
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  
+  hasUnsavedChanges = false;
+  currentNoteId = null;
+  });
   const toolbar = document.getElementById("noteActionToolbar");
   const notesContainer = document.getElementById("notesContainer");
   const searchInput = document.getElementById("liveSearchInput");
@@ -55,14 +303,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("pinText").textContent = isPinned ? "Unpin" : "Pin";
     document.getElementById("pinIcon").textContent = isPinned ? "📌" : "📍";
   }
-
-  // Edit button click handler
-  document.getElementById("editBtn").addEventListener("click", () => {
-    if (activeNote) {
-      const id = activeNote.dataset.noteId;
-      window.location.href = `/note/edit/${id}`;
-    }
-  });
 
   // Delete button click handler
   document.getElementById("deleteBtn").addEventListener("click", () => {
@@ -176,68 +416,6 @@ document.addEventListener("DOMContentLoaded", () => {
     noResults.style.display = found ? "none" : "block";
   }
 
-  // document.querySelectorAll('.lock-btn').forEach(btn => {
-  //   btn.addEventListener('click', async () => {
-  //     const card = btn.closest('.card');
-  //     const overlay = card.querySelector('.locked-overlay');
-  //     const noteId = card.dataset.noteId;
-  
-  //     const password = prompt("Set a password for this note:");
-  //     if (!password) return;
-  
-  //     const res = await fetch(`/note/lock/${noteId}`, {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({ password })
-  //     });
-  
-  //     const data = await res.json();
-  //     if (data.success) {
-  //       overlay.classList.remove('d-none');
-  
-  //       // 🔒 Remove note from localStorage if it was unlocked before
-  //       let unlocked = JSON.parse(localStorage.getItem("unlockedNotes") || "[]");
-  //       const index = unlocked.indexOf(noteId);
-  //       if (index !== -1) {
-  //         unlocked.splice(index, 1);
-  //         localStorage.setItem("unlockedNotes", JSON.stringify(unlocked));
-  //       }
-  //     } else {
-  //       alert(data.message || "Failed to lock note.");
-  //     }
-  //   });
-  // });  
-
-  // document.querySelectorAll('.locked-overlay').forEach(overlay => {
-  //   overlay.addEventListener('click', async (e) => {
-  //     e.stopPropagation();
-  //     const card = overlay.closest('.card');
-  //     const noteId = card.dataset.noteId;
-  
-  //     const password = prompt("Enter your password to unlock:");
-  //     if (!password) return;
-  
-  //     const res = await fetch(`/note/unlock/${noteId}`, {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({ password })
-  //     });
-  
-  //     const data = await res.json();
-  //     if (data.success) {
-  //       overlay.classList.add('d-none');
-  
-  //       // Optional: remember unlocked note in localStorage
-  //       let unlocked = JSON.parse(localStorage.getItem("unlockedNotes") || "[]");
-  //       if (!unlocked.includes(noteId)) {
-  //         unlocked.push(noteId);
-  //         localStorage.setItem("unlockedNotes", JSON.stringify(unlocked));
-  //       }
-  //     } else {
-  //       alert(data.message || "Incorrect password.");
-  //     }
-  //   });
-  // });
   let unlockNoteId = null;
 
   document.querySelectorAll('.locked-overlay').forEach(overlay => {
