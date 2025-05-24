@@ -179,6 +179,44 @@
     justify-content: space-between;
     align-items: center;
   }
+
+  #saveStatus {
+  transition: all 0.3s ease;
+  min-height: 20px;
+  }
+
+  #filePreview .alert {
+    animation: fadeIn 0.3s ease;
+  }
+
+  /* Add to your existing styles */
+  .file-preview-item {
+    transition: all 0.3s ease;
+  }
+
+  .file-preview-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+
+  .remove-saved-file {
+    transition: all 0.2s ease;
+  }
+
+  .remove-saved-file:hover {
+    transform: scale(1.1);
+    color: #dc3545 !important;
+  }
+
+  #filePreview .alert {
+    position: relative;
+    overflow: hidden;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 </style>
 
 <h2 class="mb-4">Your Notes</h2>
@@ -339,7 +377,7 @@
             <label for="noteFile" class="form-label">
               <i class="bi bi-upload"></i> Attach File (max 1MB)
             </label>
-            <input class="form-control" type="file" id="noteFile" accept="*/*">
+            <input class="form-control" type="file" id="noteFile" accept="*/*" multiple>
             <div class="form-text">Supported file types: images, documents, PDFs</div>
             <div id="fileError" class="text-danger small d-none"></div>
             <div id="filePreview" class="mt-2"></div>

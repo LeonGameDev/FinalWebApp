@@ -8,7 +8,7 @@ from flask import jsonify
 
 # Add this configuration at the top of your file
 UPLOAD_FOLDER = 'app/static/uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx', 'txt'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx', 'txt', 'zip'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024  # 1MB limit
 
@@ -25,40 +25,78 @@ def save_note():
     
     cur = mysql.connection.cursor()
     
-    # Handle file upload
-    file_url = None
-    if 'file' in request.files:
-        file = request.files['file']
-        if file.filename != '':
-            if file and allowed_file(file.filename):
-                filename = secure_filename(f"{current_user.id}_{int(time.time())}_{file.filename}")
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                file_url = filename
+    # Get existing files to potentially delete
+    old_files = []
+    if note_id:
+        cur.execute("SELECT file_url FROM notes WHERE id=%s", (note_id,))
+        result = cur.fetchone()
+        if result and result[0]:
+            old_files = result[0].split(',')
+    
+    # Process new file uploads
+    new_files = []
+    total_size = 0
+    timestamp = int(time.time())
+
+    for i, file in enumerate(request.files.getlist('file')):
+        if file.filename == '':
+            continue
+            
+        if not allowed_file(file.filename):
+            continue
+            
+        if file.content_length > 1024 * 1024:  # 1MB per file
+            continue
+            
+        total_size += file.content_length
+        if total_size > 1024 * 1024:  # Total 1MB limit
+            break
+            
+        filename = secure_filename(f"{current_user.id}_{timestamp}_{i}_{file.filename}")
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        new_files.append(filename)
+    
+    # Combine old and new files (unless we're replacing)
+    if note_id and old_files:
+        # If we have new uploads, replace old files
+        if new_files:
+            # Delete old files
+            for old_file in old_files:
+                try:
+                    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], old_file))
+                except Exception as e:
+                    app.logger.error(f"Error deleting old file: {e}")
+            all_files = new_files
+        else:
+            # Keep old files if no new uploads
+            all_files = old_files
+    else:
+        all_files = new_files
+    
+    # Prepare file URLs (comma-separated)
+    files_str = ','.join(all_files) if all_files else None
     
     if note_id:  # Update existing note
-        if file_url:
-            cur.execute("""
-                UPDATE notes 
-                SET title=%s, content=%s, file_url=%s
-                WHERE id=%s AND user_id=%s
-            """, (title, content, file_url, note_id, current_user.id))
-        else:
-            cur.execute("""
-                UPDATE notes 
-                SET title=%s, content=%s
-                WHERE id=%s AND user_id=%s
-            """, (title, content, note_id, current_user.id))
-        mysql.connection.commit()
-        return jsonify({"success": True, "id": note_id})
+        cur.execute("""
+            UPDATE notes 
+            SET title=%s, content=%s, file_url=%s
+            WHERE id=%s AND user_id=%s
+        """, (title, content, files_str, note_id, current_user.id))
     else:  # Create new note
         timestamp = int(time.time())
         cur.execute("""
             INSERT INTO notes (user_id, title, content, created_at, file_url) 
             VALUES (%s, %s, %s, %s, %s)
-        """, (current_user.id, title, content, timestamp, file_url))
-        mysql.connection.commit()
-        note_id = cur.lastrowid
-        return jsonify({"success": True, "id": note_id})
+        """, (current_user.id, title, content, timestamp, files_str))
+    
+    mysql.connection.commit()
+    note_id = cur.lastrowid if not note_id else note_id
+    
+    return jsonify({
+        "success": True,
+        "id": note_id,
+        "file_count": len(all_files) if all_files else 0
+    })
 
 @app.route('/note/get/<int:note_id>')
 @login_required
@@ -86,28 +124,41 @@ def get_note(note_id):
 @app.route('/note/remove_file/<int:note_id>', methods=['POST'])
 @login_required
 def remove_file(note_id):
+    filename = request.form.get('filename')
     cur = mysql.connection.cursor()
     
-    # First get the filename to delete from filesystem
+    # Get current files
     cur.execute("SELECT file_url FROM notes WHERE id=%s AND user_id=%s", 
                (note_id, current_user.id))
     result = cur.fetchone()
     
     if result and result[0]:
-        try:
+        files = result[0].split(',')
+        if filename in files:
+            # Remove the file from list
+            files.remove(filename)
+            new_files = ','.join(files) if files else None
+            
             # Delete the physical file
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], result[0])
-            if os.path.exists(file_path):
-                os.remove(file_path)
-        except Exception as e:
-            app.logger.error(f"Error deleting file: {e}")
+            try:
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                app.logger.error(f"Error deleting file: {e}")
+            
+            # Update the database
+            cur.execute("UPDATE notes SET file_url=%s WHERE id=%s AND user_id=%s", 
+                       (new_files, note_id, current_user.id))
+            mysql.connection.commit()
+            
+            return jsonify({
+                "success": True, 
+                "remaining_files": len(files),
+                "message": "File removed successfully"
+            })
     
-    # Update the database
-    cur.execute("UPDATE notes SET file_url=NULL WHERE id=%s AND user_id=%s", 
-               (note_id, current_user.id))
-    mysql.connection.commit()
-    
-    return jsonify({"success": True})
+    return jsonify({"success": False, "message": "File not found"})
 
 @app.route('/note/delete/<int:note_id>')
 @login_required

@@ -108,6 +108,9 @@ function saveNote() {
   const noteId = document.getElementById('noteId').value;
   const saveStatus = document.getElementById('saveStatus');
   const fileInput = document.getElementById('noteFile');
+
+  saveStatus.textContent = 'Saving...';
+  saveStatus.style.color = '';
   
   // Don't require title/content if we're just adding a file
   if (!noteId && (!title || !content)) {
@@ -127,13 +130,15 @@ function saveNote() {
   }
 
   if (fileInput.files.length > 0 && fileConfirmed) {
-    const file = fileInput.files[0];
-    if (file.size > 1024 * 1024) {
-      document.getElementById('fileError').textContent = 'File size exceeds 1MB limit';
-      document.getElementById('fileError').classList.remove('d-none');
-      return;
-    }
-    formData.append('file', file);
+      for (let i = 0; i < fileInput.files.length; i++) {
+          const file = fileInput.files[i];
+          if (file.size > 1024 * 1024) {
+              document.getElementById('fileError').textContent = 'One or more files exceed 1MB limit';
+              document.getElementById('fileError').classList.remove('d-none');
+              return;
+          }
+          formData.append('file', file);
+      }
   }
   
   fetch('/note/save', {
@@ -143,28 +148,86 @@ function saveNote() {
   .then(res => res.json())
   .then(data => {
     if (data.success) {
-      saveStatus.textContent = 'Saved';
+      saveStatus.textContent = 'Saved successfully';
+      saveStatus.style.color = 'green';
       hasUnsavedChanges = false;
       
       if (!noteId) {
         currentNoteId = data.id;
         document.getElementById('noteId').value = data.id;
         addNoteToUI(data.id, title, content);
-      } else {
-        updateNoteInUI(data.id, title || document.querySelector(`[data-note-id="${noteId}"] .card-title`).textContent, 
-                      content || '');
       }
       
-      // Reset file confirmation state
+      // Update file preview for existing notes
+      if (noteId) {
+        updateFilePreview(noteId);
+      }
+      
       fileConfirmed = false;
     }
   })
   .catch(() => {
     saveStatus.textContent = 'Error saving note';
+    saveStatus.style.color = 'red';
   });
 }
 
+function updateFilePreview(noteId) {
+  fetch(`/note/get/${noteId}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        const filePreview = document.getElementById('filePreview');
+        if (data.note.file_url) {
+          const files = data.note.file_url.split(',');
+          filePreview.innerHTML = files.map(file => `
+            <div class="alert alert-light p-2 mb-2 d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center">
+                <i class="bi ${getFileIcon(file)} fs-3 me-3"></i>
+                <div>
+                  <a href="/static/uploads/${file}" target="_blank">${file.split('_').pop()}</a>
+                  <div class="text-muted small">${formatFileSize(file)}</div>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-outline-danger remove-saved-file" 
+                      data-file="${file}" 
+                      data-note-id="${noteId}">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          `).join('');
+        } else {
+          filePreview.innerHTML = '';
+        }
+        
+        // Update the note card in the main view
+        updateNoteFileIndicator(noteId, data.note.file_url);
+      }
+    });
+}
+
+function getFileIcon(filename) {
+  if (filename.match(/\.(jpg|jpeg|png|gif)$/i)) return 'bi-file-image';
+  if (filename.match(/\.pdf$/i)) return 'bi-file-earmark-pdf';
+  if (filename.match(/\.(doc|docx)$/i)) return 'bi-file-earmark-word';
+  if (filename.match(/\.(xls|xlsx)$/i)) return 'bi-file-earmark-excel';
+  if (filename.match(/\.(zip|rar)$/i)) return 'bi-file-earmark-zip';
+  return 'bi-file-earmark-text';
+}
+
+function updateNoteFileIndicator(noteId, fileUrls) {
+  const noteElement = document.querySelector(`[data-note-id="${noteId}"]`);
+  const fileIndicator = noteElement?.querySelector('.file-indicator');
+  if (fileIndicator) {
+    const fileCount = fileUrls ? fileUrls.split(',').length : 0;
+    fileIndicator.classList.toggle('d-none', fileCount === 0);
+    fileIndicator.innerHTML = fileCount > 0 ? 
+      `<i class="bi bi-paperclip"></i> ${fileCount}` : '';
+  }
+}
+
 // Add file preview functionality
+document.getElementById('noteFile').setAttribute('multiple', 'multiple');
 document.getElementById('noteFile').addEventListener('change', function(e) {
   const fileError = document.getElementById('fileError');
   const filePreview = document.getElementById('filePreview');
@@ -178,57 +241,104 @@ document.getElementById('noteFile').addEventListener('change', function(e) {
   fileConfirmed = false;
   
   if (this.files.length > 0) {
-    currentFile = this.files[0];
+    let totalSize = 0;
+    let validFiles = [];
     
-    // Check file size
-    if (currentFile.size > 1024 * 1024) {
-      fileError.textContent = 'File size exceeds 1MB limit';
-      fileError.classList.remove('d-none');
-      this.value = '';
-      return;
-    }
+    // Validate each file
+    Array.from(this.files).forEach(file => {
+      const fileExt = file.name.split('.').pop().toLowerCase();
+      const allowedExts = ['png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx', 'txt', 'zip'];
+      
+      if (!allowedExts.includes(fileExt)) {
+        return;
+      }
+      
+      if (file.size > 1024 * 1024) {
+        return;
+      }
+      
+      totalSize += file.size;
+      if (totalSize <= 1024 * 1024) {
+        validFiles.push(file);
+      }
+    });
     
-    // Show preview
-    if (currentFile.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        filePreview.innerHTML = `
-          <div class="alert alert-light p-2 d-flex align-items-center">
-            <img src="${e.target.result}" class="img-thumbnail me-3" style="max-height: 100px;">
-            <div>
-              <strong>${currentFile.name}</strong><br>
-              ${(currentFile.size/1024).toFixed(1)}KB
+    // Show preview for valid files
+    if (validFiles.length > 0) {
+      validFiles.slice(0, 5).forEach((file, index) => {
+        const previewItem = document.createElement('div');
+        previewItem.className = 'alert alert-light p-2 mb-2';
+        
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            previewItem.innerHTML = `
+              <div class="d-flex align-items-center">
+                <img src="${e.target.result}" class="img-thumbnail me-3" style="max-height: 60px;">
+                <div>
+                  <strong>${file.name}</strong><br>
+                  ${formatFileSize(file.size)}
+                  ${index === 4 && validFiles.length > 5 ? 
+                    `<div class="text-muted">+ ${validFiles.length - 5} more</div>` : ''}
+                </div>
+              </div>
+            `;
+            filePreview.appendChild(previewItem);
+          };
+          reader.readAsDataURL(file);
+        } else {
+          previewItem.innerHTML = `
+            <div class="d-flex align-items-center">
+              <i class="bi ${getFileIcon(file.name)} fs-3 me-3"></i>
+              <div>
+                <strong>${file.name}</strong><br>
+                ${formatFileSize(file.size)}
+                ${index === 4 && validFiles.length > 5 ? 
+                  `<div class="text-muted">+ ${validFiles.length - 5} more</div>` : ''}
+              </div>
             </div>
-          </div>
-        `;
-      };
-      reader.readAsDataURL(currentFile);
+          `;
+          filePreview.appendChild(previewItem);
+        }
+      });
+      
+      // Show action buttons
+      confirmBtn.classList.remove('d-none');
+      removeBtn.classList.remove('d-none');
     } else {
-      filePreview.innerHTML = `
-        <div class="alert alert-light p-2">
-          <div class="d-flex align-items-center">
-            <i class="bi bi-file-earmark-text fs-1 me-3"></i>
-            <div>
-              <strong>${currentFile.name}</strong><br>
-              ${(currentFile.size/1024).toFixed(1)}KB
-            </div>
-          </div>
+      fileError.innerHTML = `
+        <div class="alert alert-warning p-2">
+          No valid files selected. Please check:
+          <ul class="mb-0">
+            <li>Allowed extensions: .png, .jpg, .pdf, .doc, .txt, .zip</li>
+            <li>Total max 1MB for all files</li>
+          </ul>
         </div>
       `;
+      fileError.classList.remove('d-none');
+      this.value = '';
     }
-    
-    // Show action buttons
-    confirmBtn.classList.remove('d-none');
-    removeBtn.classList.remove('d-none');
   }
 });
 
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' bytes';
+  else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  else return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
 // Add confirm upload handler
+// Update the confirm upload handler
 document.getElementById('confirmUploadBtn').addEventListener('click', function() {
+  const saveStatus = document.getElementById('saveStatus');
+  saveStatus.textContent = 'Uploading file...';
+  saveStatus.style.color = '';
+  
   fileConfirmed = true;
   this.classList.add('d-none');
   document.getElementById('removeFileBtn').classList.add('d-none');
-  document.getElementById('saveStatus').textContent = 'File ready to be saved with note';
+  
+  // Immediately save
   saveNote();
 });
 
@@ -244,13 +354,13 @@ document.getElementById('removeFileBtn').addEventListener('click', function() {
 
 
 function addNoteToUI(id, title, content) {
-  // Create a new note card and add it to the DOM
   const notesContainer = document.getElementById('notesContainer');
   const newNoteHtml = `
     <div class="col-12 col-md-2 grid-view-item mb-3" data-title="${title.toLowerCase()}" data-time="${Math.floor(Date.now()/1000)}">
       <div class="card position-relative p-3 shadow-sm h-100 d-flex flex-column justify-content-between" 
            data-note-id="${id}">
         <h5 class="card-title">${title}</h5>
+        <div class="position-absolute top-0 start-0 p-2 file-indicator d-none"></div>
         <div class="d-flex flex-wrap gap-2 mt-2">
           <button class="btn btn-sm btn-outline-success color-palette me-2" title="Change Color">🎨</button>
           <input type="color" class="form-control form-control-color color-picker d-none" value="#ffffff">
@@ -261,14 +371,21 @@ function addNoteToUI(id, title, content) {
             <i class="bi bi-share" style="font-size: 1rem;"></i>
           </button>
         </div>
-        <div class="position-absolute top-0 start-0 p-2">
-          <i class="bi bi-paperclip text-muted file-indicator d-none"></i>
-        </div>
       </div>
     </div>
   `;
   
   notesContainer.insertAdjacentHTML('afterbegin', newNoteHtml);
+  
+  // Immediately check for files
+  updateNoteFileIndicator(id, '');
+  fetch(`/note/get/${id}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        updateNoteFileIndicator(id, data.note.file_url);
+      }
+    });
 }
 
 function updateNoteInUI(id, title, content) {
@@ -669,25 +786,41 @@ document.getElementById('noteModal').addEventListener('hidden.bs.modal', () => {
     });
   });
 
-  // Add this in your DOMContentLoaded callback
   document.addEventListener('click', function(e) {
-    if (e.target.closest('.remove-saved-file')) {
-      const noteId = e.target.closest('.remove-saved-file').dataset.noteId;
-      if (confirm('Are you sure you want to remove this file?')) {
-        fetch(`/note/remove_file/${noteId}`, {
-          method: 'POST'
-        })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            document.getElementById('filePreview').innerHTML = '';
-            // Update the note in UI to remove file indicator
-            updateNoteInUI(noteId, 
-              document.getElementById('noteTitle').value,
-              document.getElementById('noteContent').value);
+  if (e.target.closest('.remove-saved-file')) {
+    const button = e.target.closest('.remove-saved-file');
+    const noteId = button.dataset.noteId;
+    const filename = button.dataset.file;
+    
+    if (confirm(`Are you sure you want to remove ${filename.split('_').pop()}?`)) {
+      const saveStatus = document.getElementById('saveStatus');
+      saveStatus.textContent = 'Removing file...';
+      saveStatus.style.color = '';
+      
+      fetch(`/note/remove_file/${noteId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `filename=${encodeURIComponent(filename)}`
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          saveStatus.textContent = 'File removed successfully';
+          saveStatus.style.color = 'green';
+          updateFilePreview(noteId);
+          
+          // If no files left, clear the file input
+          if (data.remaining_files === 0) {
+            document.getElementById('noteFile').value = '';
           }
-        });
-      }
+        } else {
+          saveStatus.textContent = 'Error removing file';
+          saveStatus.style.color = 'red';
+        }
+      });
+    }
     }
   });
 
