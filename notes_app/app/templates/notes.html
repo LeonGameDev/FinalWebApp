@@ -143,6 +143,42 @@
     border-color: #4dabf7 !important;
   }
 
+  #filePreview img {
+  max-width: 100%;
+  height: auto;
+  }
+
+  .bi-upload {
+    margin-right: 5px;
+  }
+
+  #confirmUploadBtn {
+    margin-right: 10px;
+  }
+
+  .bi-file-earmark-text {
+    color: #6c757d;
+  }
+
+  .file-indicator {
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  }
+
+  .card:hover .file-indicator {
+    color: var(--bs-primary) !important;
+  }
+
+  .remove-saved-file {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  }
+
+  #filePreview .alert {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 </style>
 
 <h2 class="mb-4">Your Notes</h2>
@@ -298,11 +334,30 @@
           <div class="mb-3">
             <textarea class="form-control" id="noteContent" rows="10" placeholder="Write your note here..." required></textarea>
           </div>
+          <!-- Add file upload section -->
+          <div class="mb-3">
+            <label for="noteFile" class="form-label">
+              <i class="bi bi-upload"></i> Attach File (max 1MB)
+            </label>
+            <input class="form-control" type="file" id="noteFile" accept="*/*">
+            <div class="form-text">Supported file types: images, documents, PDFs</div>
+            <div id="fileError" class="text-danger small d-none"></div>
+            <div id="filePreview" class="mt-2"></div>
+          </div>
         </form>
         <div id="saveStatus" class="text-muted small"></div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" id="confirmUploadBtn" class="btn btn-success d-none">
+          <i class="bi bi-check-circle"></i> Confirm Upload
+        </button>
+        <button type="button" id="removeFileBtn" class="btn btn-outline-danger d-none">
+          <i class="bi bi-trash"></i> Remove File
+        </button>
+      </div>
+      <div id="filePreview" class="mt-2">
+        <!-- This will be populated dynamically -->
       </div>
     </div>
   </div>

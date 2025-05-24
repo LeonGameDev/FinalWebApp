@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 28, 2025 at 10:35 AM
+-- Generation Time: May 24, 2025 at 03:29 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -36,32 +36,33 @@ CREATE TABLE `notes` (
   `pinned` tinyint(1) DEFAULT 0,
   `is_locked` tinyint(1) DEFAULT 0,
   `created_at` bigint(20) UNSIGNED DEFAULT unix_timestamp(),
-  `password_hash` varchar(255) DEFAULT NULL
+  `password_hash` varchar(255) DEFAULT NULL,
+  `file_url` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `notes`
 --
 
-INSERT INTO `notes` (`id`, `user_id`, `title`, `content`, `color`, `pinned`, `is_locked`, `created_at`, `password_hash`) VALUES
-(2, 1, 'Second Note', 'More text for the second note.', '#16b192', 0, 0, 1700000000, NULL),
-(4, 1, 'Meeting Notes', 'Discussed project timeline, assigned tasks.', '#d2cc19', 0, 0, 1701000000, NULL),
-(5, 1, 'Shopping List', 'Eggs, Bread, Milk, Coffee', '#62c520', 0, 0, 1702000000, NULL),
-(6, 1, 'Study Plan', '1. Flask basics\n2. SQL joins\n3. Flask-Login', '#d69a9a', 0, 0, 1703000000, NULL),
-(7, 1, 'Workout Routine', 'Pushups, Situps, Squats, Plank', '#92289a', 0, 0, 170400000, NULL),
-(8, 1, 'Books to Read', 'Clean Code, Atomic Habits, Deep Work', '#8593d5', 0, 0, 1705000000, ''),
-(9, 1, 'Birthday Plans', 'Book a table, invite friends, get a cake', NULL, 0, 0, 1706000000, NULL),
-(10, 1, 'Website Ideas', 'Note-taking app, To-do tracker, Budget planner', NULL, 0, 0, 1707000000, NULL),
-(11, 1, 'Code Snippets', 'Remember how to hash passwords with bcrypt', NULL, 0, 0, 1708000000, ''),
-(12, 1, 'Quotes', '“Simplicity is the soul of efficiency.” – Austin Freeman', NULL, 0, 0, 1709000000, NULL),
-(13, 1, 'Bug Log', 'Login page redirect fails when already logged in', NULL, 0, 0, 1710000000, NULL),
-(14, 1, 'John Corner', 'My name is John', NULL, 0, 0, 1711000000, NULL),
-(15, 1, 'John', 'John Corner\r\n', NULL, 0, 0, 1712000000, NULL),
-(19, 1, 'My Example Time 1:32', '', NULL, 0, 0, 1713000000, NULL),
-(20, 1, 'Test at 2:20 24/4/2025', '', NULL, 0, 0, 1745454014, NULL),
-(21, 1, 'Test at 12:24 25/4/2025', '', NULL, 0, 0, 1745533500, NULL),
-(22, 1, 'Test at 2:07PM 26/4/2025', '', NULL, 0, 0, 1745651287, ''),
-(23, 1, 'Test at 2:37PM 26/4/2025', '', NULL, 0, 0, 1745653039, NULL);
+INSERT INTO `notes` (`id`, `user_id`, `title`, `content`, `color`, `pinned`, `is_locked`, `created_at`, `password_hash`, `file_url`) VALUES
+(2, 1, 'Second Note', 'More text for the second note.', '#16b192', 0, 0, 1700000000, NULL, NULL),
+(4, 1, 'Meeting Notes', 'Discussed project timeline, assigned tasks.', '#d2cc19', 0, 0, 1701000000, NULL, NULL),
+(5, 1, 'Shopping List', 'Eggs, Bread, Milk, Coffee', '#62c520', 0, 0, 1702000000, NULL, NULL),
+(6, 1, 'Study Plan', '1. Flask basics\n2. SQL joins\n3. Flask-Login', '#d69a9a', 0, 0, 1703000000, NULL, NULL),
+(7, 1, 'Workout Routine', 'Pushups, Situps, Squats, Plank', '#92289a', 0, 0, 170400000, NULL, NULL),
+(8, 1, 'Books to Read', 'Clean Code, Atomic Habits, Deep Work', '#8593d5', 0, 0, 1705000000, '', NULL),
+(9, 1, 'Birthday Plans', 'Book a table, invite friends, get a cake', NULL, 0, 0, 1706000000, NULL, NULL),
+(10, 1, 'Website Ideas', 'Note-taking app, To-do tracker, Budget planner', NULL, 0, 0, 1707000000, NULL, NULL),
+(11, 1, 'Code Snippets', 'Remember how to hash passwords with bcrypt', NULL, 0, 0, 1708000000, '', NULL),
+(12, 1, 'Quotes', '“Simplicity is the soul of efficiency.” – Austin Freeman', NULL, 0, 0, 1709000000, NULL, NULL),
+(13, 1, 'Bug Log', 'Login page redirect fails when already logged in\r\nI\'ve just upload the file\r\nSecond attempted\r\nThird attempted', NULL, 0, 0, 1710000000, NULL, NULL),
+(14, 1, 'John Corner', 'My name is John', NULL, 0, 0, 1711000000, NULL, NULL),
+(15, 1, 'John', 'John Corner\r\n', NULL, 0, 0, 1712000000, NULL, NULL),
+(19, 1, 'My Example Time 1:32', '', NULL, 0, 0, 1713000000, NULL, NULL),
+(20, 1, 'Test at 2:20 24/4/2025', '', NULL, 0, 0, 1745454014, NULL, NULL),
+(21, 1, 'Test at 12:24 25/4/2025', '', NULL, 0, 0, 1745533500, NULL, NULL),
+(22, 1, 'Test at 2:07PM 26/4/2025', '', NULL, 0, 0, 1745651287, '', NULL),
+(23, 1, 'Test at 2:37PM 26/4/2025', '', NULL, 0, 0, 1745653039, NULL, NULL);
 
 -- --------------------------------------------------------
 

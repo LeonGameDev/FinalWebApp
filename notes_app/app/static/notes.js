@@ -2,14 +2,16 @@ console.log("Note loaded");
 
 document.addEventListener("DOMContentLoaded", () => {
   // Add these variables at the top of your notes.js
-let saveTimer = null;
-let currentNoteId = null;
-let hasUnsavedChanges = false;
+  let saveTimer = null;
+  let currentNoteId = null;
+  let hasUnsavedChanges = false;
+  let currentFile = null;
+  let fileConfirmed = false;
 
-// Add these event listeners in your DOMContentLoaded callback
-document.getElementById('newNoteBtn').addEventListener('click', () => {
-  openNoteModal();
-});
+  // Add these event listeners in your DOMContentLoaded callback
+  document.getElementById('newNoteBtn').addEventListener('click', () => {
+    openNoteModal();
+  });
 
 // Add these functions to your notes.js
 function openNoteModal(noteId = null) {
@@ -26,6 +28,12 @@ function openNoteModal(noteId = null) {
   noteIdField.value = '';
   saveStatus.textContent = '';
   currentNoteId = null;
+
+  // Reset file input
+  document.getElementById('noteFile').value = '';
+  document.getElementById('fileError').classList.add('d-none');
+  document.getElementById('filePreview').innerHTML = '';
+  currentFile = null;
   
   if (noteId) {
     // Editing existing note
@@ -40,6 +48,25 @@ function openNoteModal(noteId = null) {
         if (data.success) {
           titleField.value = data.note.title;
           contentField.value = data.note.content;
+          
+          // Show existing file if it exists
+          if (data.note.file_url) {
+            const filePreview = document.getElementById('filePreview');
+            filePreview.innerHTML = `
+              <div class="alert alert-light p-2 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-paperclip fs-4 me-3"></i>
+                  <div>
+                    <strong>Attached File</strong><br>
+                    <a href="/static/uploads/${data.note.file_url}" target="_blank">View File</a>
+                  </div>
+                </div>
+                <button class="btn btn-sm btn-outline-danger remove-saved-file" data-note-id="${noteId}">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            `;
+          }
         }
       });
   } else {
@@ -80,24 +107,38 @@ function saveNote() {
   const content = document.getElementById('noteContent').value.trim();
   const noteId = document.getElementById('noteId').value;
   const saveStatus = document.getElementById('saveStatus');
+  const fileInput = document.getElementById('noteFile');
   
-  if (!title || !content) {
-    saveStatus.textContent = 'Title and content are required';
+  // Don't require title/content if we're just adding a file
+  if (!noteId && (!title || !content)) {
+    saveStatus.textContent = 'Title and content are required for new notes';
     return;
   }
   
-  const data = {
-    id: noteId || null,
-    title: title,
-    content: content
-  };
+  const formData = new FormData();
+  formData.append('id', noteId || '');
+  if (title) formData.append('title', title);
+  if (content) formData.append('content', content);
+  
+  if (fileInput.files.length > 0 && !fileConfirmed) {
+    document.getElementById('fileError').textContent = 'Please confirm the file upload';
+    document.getElementById('fileError').classList.remove('d-none');
+    return;
+  }
+
+  if (fileInput.files.length > 0 && fileConfirmed) {
+    const file = fileInput.files[0];
+    if (file.size > 1024 * 1024) {
+      document.getElementById('fileError').textContent = 'File size exceeds 1MB limit';
+      document.getElementById('fileError').classList.remove('d-none');
+      return;
+    }
+    formData.append('file', file);
+  }
   
   fetch('/note/save', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data)
+    body: formData
   })
   .then(res => res.json())
   .then(data => {
@@ -106,24 +147,101 @@ function saveNote() {
       hasUnsavedChanges = false;
       
       if (!noteId) {
-        // If this was a new note, update the ID
         currentNoteId = data.id;
         document.getElementById('noteId').value = data.id;
-        
-        // Add the new note to the UI
         addNoteToUI(data.id, title, content);
       } else {
-        // Update existing note in UI
-        updateNoteInUI(data.id, title, content);
+        updateNoteInUI(data.id, title || document.querySelector(`[data-note-id="${noteId}"] .card-title`).textContent, 
+                      content || '');
       }
-    } else {
-      saveStatus.textContent = 'Error saving note';
+      
+      // Reset file confirmation state
+      fileConfirmed = false;
     }
   })
   .catch(() => {
     saveStatus.textContent = 'Error saving note';
   });
 }
+
+// Add file preview functionality
+document.getElementById('noteFile').addEventListener('change', function(e) {
+  const fileError = document.getElementById('fileError');
+  const filePreview = document.getElementById('filePreview');
+  const confirmBtn = document.getElementById('confirmUploadBtn');
+  const removeBtn = document.getElementById('removeFileBtn');
+  
+  fileError.classList.add('d-none');
+  filePreview.innerHTML = '';
+  confirmBtn.classList.add('d-none');
+  removeBtn.classList.add('d-none');
+  fileConfirmed = false;
+  
+  if (this.files.length > 0) {
+    currentFile = this.files[0];
+    
+    // Check file size
+    if (currentFile.size > 1024 * 1024) {
+      fileError.textContent = 'File size exceeds 1MB limit';
+      fileError.classList.remove('d-none');
+      this.value = '';
+      return;
+    }
+    
+    // Show preview
+    if (currentFile.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        filePreview.innerHTML = `
+          <div class="alert alert-light p-2 d-flex align-items-center">
+            <img src="${e.target.result}" class="img-thumbnail me-3" style="max-height: 100px;">
+            <div>
+              <strong>${currentFile.name}</strong><br>
+              ${(currentFile.size/1024).toFixed(1)}KB
+            </div>
+          </div>
+        `;
+      };
+      reader.readAsDataURL(currentFile);
+    } else {
+      filePreview.innerHTML = `
+        <div class="alert alert-light p-2">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-file-earmark-text fs-1 me-3"></i>
+            <div>
+              <strong>${currentFile.name}</strong><br>
+              ${(currentFile.size/1024).toFixed(1)}KB
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Show action buttons
+    confirmBtn.classList.remove('d-none');
+    removeBtn.classList.remove('d-none');
+  }
+});
+
+// Add confirm upload handler
+document.getElementById('confirmUploadBtn').addEventListener('click', function() {
+  fileConfirmed = true;
+  this.classList.add('d-none');
+  document.getElementById('removeFileBtn').classList.add('d-none');
+  document.getElementById('saveStatus').textContent = 'File ready to be saved with note';
+  saveNote();
+});
+
+// Add remove file handler
+document.getElementById('removeFileBtn').addEventListener('click', function() {
+  document.getElementById('noteFile').value = '';
+  document.getElementById('filePreview').innerHTML = '';
+  this.classList.add('d-none');
+  document.getElementById('confirmUploadBtn').classList.add('d-none');
+  currentFile = null;
+  fileConfirmed = false;
+});
+
 
 function addNoteToUI(id, title, content) {
   // Create a new note card and add it to the DOM
@@ -143,6 +261,9 @@ function addNoteToUI(id, title, content) {
             <i class="bi bi-share" style="font-size: 1rem;"></i>
           </button>
         </div>
+        <div class="position-absolute top-0 start-0 p-2">
+          <i class="bi bi-paperclip text-muted file-indicator d-none"></i>
+        </div>
       </div>
     </div>
   `;
@@ -159,17 +280,22 @@ function updateNoteInUI(id, title, content) {
       titleElement.textContent = title;
     }
     noteElement.closest('[data-title]').dataset.title = title.toLowerCase();
+    
+    // Check if this note has a file (we'll update this after saving)
+    const fileIndicator = noteElement.querySelector('.file-indicator');
+    if (fileIndicator) {
+      fetch(`/note/get/${id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.note.file_url) {
+            fileIndicator.classList.remove('d-none');
+          } else {
+            fileIndicator.classList.add('d-none');
+          }
+        });
+    }
   }
 }
-
-// Add this to handle clicking on notes to edit them
-// document.addEventListener('click', (e) => {
-//   const card = e.target.closest('.card');
-//   if (card && !e.target.closest('.locked-overlay') && !e.target.closest('.btn')) {
-//     const noteId = card.dataset.noteId;
-//     openNoteModal(noteId);
-//   }
-// });
   // Replace the existing card event listeners with this:
   document.querySelectorAll(".card").forEach(card => {
   let longPressActive = false;
@@ -541,6 +667,28 @@ document.getElementById('noteModal').addEventListener('hidden.bs.modal', () => {
       const direction = this.dataset.sort;
       reorderNotes(direction);  // Reorder notes based on sort direction
     });
+  });
+
+  // Add this in your DOMContentLoaded callback
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-saved-file')) {
+      const noteId = e.target.closest('.remove-saved-file').dataset.noteId;
+      if (confirm('Are you sure you want to remove this file?')) {
+        fetch(`/note/remove_file/${noteId}`, {
+          method: 'POST'
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            document.getElementById('filePreview').innerHTML = '';
+            // Update the note in UI to remove file indicator
+            updateNoteInUI(noteId, 
+              document.getElementById('noteTitle').value,
+              document.getElementById('noteContent').value);
+          }
+        });
+      }
+    }
   });
 
   reorderNotes("asc");
