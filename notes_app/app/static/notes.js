@@ -7,6 +7,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let hasUnsavedChanges = false;
   let currentFile = null;
   let fileConfirmed = false;
+  let deleteType = null; // 'note' or 'file'
+  let deleteNoteId = null;
+  let deleteFilename = null;
 
   // Add these event listeners in your DOMContentLoaded callback
   document.getElementById('newNoteBtn').addEventListener('click', () => {
@@ -218,7 +221,7 @@ function updateNoteFileIndicator(noteId, fileUrls) {
   const noteElement = document.querySelector(`[data-note-id="${noteId}"]`);
   const fileIndicator = noteElement?.querySelector('.file-indicator');
   if (fileIndicator) {
-    const fileCount = fileUrls ? fileUrls.split(',').length : 0;
+    const fileCount = fileUrls ? (typeof fileUrls === 'string' ? fileUrls.split(',').length : 1) : 0;
     fileIndicator.classList.toggle('d-none', fileCount === 0);
     fileIndicator.innerHTML = fileCount > 0 ? 
       `<i class="bi bi-paperclip"></i> ${fileCount}` : '';
@@ -538,10 +541,97 @@ document.getElementById('noteModal').addEventListener('hidden.bs.modal', () => {
 
   // Delete button click handler
   document.getElementById("deleteBtn").addEventListener("click", () => {
-    if (activeNote && confirm("Delete this note?")) {
-      const id = activeNote.dataset.noteId;
-      window.location.href = `/note/delete/${id}`;
+    if (activeNote) {
+      deleteType = 'note';
+      deleteNoteId = activeNote.dataset.noteId;
+      document.getElementById('confirmDeleteModalTitle').textContent = 'Delete Note';
+      document.getElementById('confirmDeleteModalBody').textContent = 'Are you sure you want to delete this note? This action cannot be undone.';
+      const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+      modal.show();
     }
+  });
+
+  document.addEventListener('click', function(e) {
+  if (e.target.closest('.remove-saved-file')) {
+    const button = e.target.closest('.remove-saved-file');
+    deleteType = 'file';
+    deleteNoteId = button.dataset.noteId;
+    deleteFilename = button.dataset.file;
+    
+    // Update modal content
+    document.getElementById('confirmDeleteModalTitle').textContent = 'Delete File';
+    document.getElementById('confirmDeleteModalBody').textContent = `Are you sure you want to delete "${deleteFilename.split('_').pop()}"?`;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+    modal.show();
+  }
+  
+  // Handle removal of newly selected file (before upload)
+  if (e.target.closest('#removeSelectedFile')) {
+    document.getElementById('noteFile').value = '';
+    document.getElementById('filePreview').innerHTML = '';
+    document.getElementById('confirmUploadBtn').classList.add('d-none');
+    document.getElementById('removeFileBtn').classList.add('d-none');
+    fileConfirmed = false;
+  }
+  });
+
+document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+  const modal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
+  
+  if (deleteType === 'note') {
+    // Handle note deletion
+    window.location.href = `/note/delete/${deleteNoteId}`;
+  } else if (deleteType === 'file') {
+    // Handle file deletion
+    const saveStatus = document.getElementById('saveStatus');
+    saveStatus.textContent = 'Removing file...';
+    saveStatus.className = 'text-muted small';
+    
+    fetch(`/note/remove_file/${deleteNoteId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `filename=${encodeURIComponent(deleteFilename)}`
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        saveStatus.textContent = 'File removed successfully';
+        saveStatus.className = 'upload-success small';
+        
+        // Clear the file preview
+        document.getElementById('filePreview').innerHTML = '';
+        
+        // Hide the remove file button
+        document.getElementById('removeFileBtn').classList.add('d-none');
+        
+        // If no files left, clear the file input
+        if (data.remaining_files === 0) {
+          document.getElementById('noteFile').value = '';
+        }
+        
+        // Update the note's file indicator in the UI
+        updateNoteFileIndicator(deleteNoteId, data.remaining_files > 0 ? 'file_exists' : '');
+      } else {
+        saveStatus.textContent = 'Error removing file';
+        saveStatus.className = 'text-danger small';
+      }
+      modal.hide();
+    })
+    .catch(() => {
+      saveStatus.textContent = 'Error removing file';
+      saveStatus.className = 'text-danger small';
+      modal.hide();
+    });
+  }
+  
+  // Reset deletion variables
+  deleteType = null;
+  deleteNoteId = null;
+  deleteFilename = null;
   });
 
   // Pin button click handler
@@ -787,41 +877,41 @@ document.addEventListener('click', function(e) {
   }
   
   // Handle removal of already saved file
-  if (e.target.closest('.remove-saved-file')) {
-    const button = e.target.closest('.remove-saved-file');
-    const noteId = button.dataset.noteId;
-    const filename = button.dataset.file;
+  // if (e.target.closest('.remove-saved-file')) {
+  //   const button = e.target.closest('.remove-saved-file');
+  //   const noteId = button.dataset.noteId;
+  //   const filename = button.dataset.file;
     
-    if (confirm(`Are you sure you want to remove this file?`)) {
-      const saveStatus = document.getElementById('saveStatus');
-      saveStatus.textContent = 'Removing file...';
-      saveStatus.className = 'text-muted small';
+  //   if (confirm(`Are you sure you want to remove this file?`)) {
+  //     const saveStatus = document.getElementById('saveStatus');
+  //     saveStatus.textContent = 'Removing file...';
+  //     saveStatus.className = 'text-muted small';
       
-      fetch(`/note/remove_file/${noteId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `filename=${encodeURIComponent(filename)}`
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          saveStatus.textContent = 'File removed successfully';
-          saveStatus.className = 'upload-success small';
-          updateFilePreview(noteId);
+  //     fetch(`/note/remove_file/${noteId}`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/x-www-form-urlencoded',
+  //       },
+  //       body: `filename=${encodeURIComponent(filename)}`
+  //     })
+  //     .then(res => res.json())
+  //     .then(data => {
+  //       if (data.success) {
+  //         saveStatus.textContent = 'File removed successfully';
+  //         saveStatus.className = 'upload-success small';
+  //         updateFilePreview(noteId);
           
-          // Clear the file input if no files left
-          if (data.remaining_files === 0) {
-            document.getElementById('noteFile').value = '';
-          }
-        } else {
-          saveStatus.textContent = 'Error removing file';
-          saveStatus.className = 'text-danger small';
-        }
-      });
-    }
-  }
+  //         // Clear the file input if no files left
+  //         if (data.remaining_files === 0) {
+  //           document.getElementById('noteFile').value = '';
+  //         }
+  //       } else {
+  //         saveStatus.textContent = 'Error removing file';
+  //         saveStatus.className = 'text-danger small';
+  //       }
+  //     });
+    // }
+  // }
 });
 
   reorderNotes("asc");
