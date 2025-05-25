@@ -8,7 +8,7 @@ from flask import jsonify
 
 # Add this configuration at the top of your file
 UPLOAD_FOLDER = 'app/static/uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx', 'txt', 'zip'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx', 'txt', 'zip', 'rar'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024  # 1MB limit
 
@@ -38,23 +38,19 @@ def save_note():
     total_size = 0
     timestamp = int(time.time())
 
-    for i, file in enumerate(request.files.getlist('file')):
-        if file.filename == '':
-            continue
-            
-        if not allowed_file(file.filename):
-            continue
-            
-        if file.content_length > 1024 * 1024:  # 1MB per file
-            continue
-            
-        total_size += file.content_length
-        if total_size > 1024 * 1024:  # Total 1MB limit
-            break
-            
-        filename = secure_filename(f"{current_user.id}_{timestamp}_{i}_{file.filename}")
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        new_files.append(filename)
+    # In the save_note function, change the file processing part to:
+    new_files = []
+    total_size = 0
+    timestamp = int(time.time())
+
+    # Only process the first file if multiple are selected
+    if request.files.getlist('file') and len(request.files.getlist('file')) > 0:
+        file = request.files.getlist('file')[0]  # Only take the first file
+        if file.filename != '' and allowed_file(file.filename):
+            if file.content_length <= 1024 * 1024:  # 1MB limit
+                filename = secure_filename(f"{current_user.id}_{timestamp}_{file.filename}")
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                new_files.append(filename)
     
     # Combine old and new files (unless we're replacing)
     if note_id and old_files:

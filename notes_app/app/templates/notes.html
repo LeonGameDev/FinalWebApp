@@ -217,6 +217,14 @@
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
   }
+
+  .form-text {
+    color: #00a1fd; /* Bootstrap's secondary text color */
+  }
+  
+  .upload-success {
+    color: #28a745; /* Bootstrap's success color */
+  }
 </style>
 
 <h2 class="mb-4">Your Notes</h2>
@@ -375,12 +383,11 @@
           <!-- Add file upload section -->
           <div class="mb-3">
             <label for="noteFile" class="form-label">
-              <i class="bi bi-upload"></i> Attach File (max 1MB)
+              <i class="bi bi-upload"></i> Attach File (max 1MB, single file only)
             </label>
-            <input class="form-control" type="file" id="noteFile" accept="*/*" multiple>
-            <div class="form-text">Supported file types: images, documents, PDFs</div>
+            <input class="form-control" type="file" id="noteFile" accept="*/*">
+            <div class="form-text">Supported file types: PNG, JPG, JPEG, GIF, PDF, DOC, DOCX, TXT, ZIP, RAR.</div>
             <div id="fileError" class="text-danger small d-none"></div>
-            <div id="filePreview" class="mt-2"></div>
           </div>
         </form>
         <div id="saveStatus" class="text-muted small"></div>
