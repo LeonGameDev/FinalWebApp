@@ -55,6 +55,27 @@ if (gridViewBtn && listViewBtn && notesContainer) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  const fontSizeInput = document.getElementById('fontSizeInput');
+
+  // Load saved font size
+  const savedSize = localStorage.getItem('noteFontSize') || '18';
+  document.documentElement.style.setProperty('--note-font-size', `${savedSize}px`);
+  fontSizeInput.value = savedSize;
+
+  // Update font size on Enter key
+  fontSizeInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const size = parseInt(fontSizeInput.value, 10);
+      if (!isNaN(size)) {
+        const clamped = Math.max(10, Math.min(36, size));
+        fontSizeInput.value = clamped;
+        document.documentElement.style.setProperty('--note-font-size', `${clamped}px`);
+        localStorage.setItem('noteFontSize', clamped);
+        fontSizeInput.blur();
+      }
+    }
+  });
+
   // Create color picker window if it doesn't exist
   let pickerWindow = document.querySelector('.color-picker-window');
   if (!pickerWindow) {
