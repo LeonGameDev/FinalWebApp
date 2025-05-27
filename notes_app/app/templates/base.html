@@ -18,9 +18,12 @@
         {% if current_user.is_authenticated %}
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 text-white" href="#" role="button" data-bs-toggle="dropdown">
-            <div class="avatar-circle bg-light text-dark fw-bold">
-              {{ current_user.display_name[0]|upper }}
-            </div>
+            {% if current_user.avatar %}
+              <img src="{{ url_for('static', filename='avatars/' + current_user.avatar) }}?v={{ current_user.id }}" 
+                  class="rounded-circle" width="30" height="30">
+            {% else %}
+              <img src="{{ avatars.default() }}" class="rounded-circle" width="30" height="30">
+            {% endif %}
             {{ current_user.display_name }}
           </a>
           <ul class="dropdown-menu dropdown-menu-end">

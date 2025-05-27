@@ -1,3 +1,4 @@
+import os
 from app import app
 from flask import render_template
 
@@ -207,16 +208,48 @@ def update_note_color(note_id):
     mysql.connection.commit()
     return jsonify({"success": True})
 
+from werkzeug.utils import secure_filename
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
-    message = ''
     if request.method == 'POST':
         new_name = request.form['display_name']
+        avatar_file = request.files.get('avatar')
+
+        # Handle avatar upload
+        filename = None
+        if avatar_file and allowed_file(avatar_file.filename):
+            # Delete old avatar if exists
+            if current_user.avatar:
+                old_path = os.path.join(app.config['AVATARS_SAVE_PATH'], current_user.avatar)
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+
+            # Save new avatar
+            filename = f"user_{current_user.id}_{secure_filename(avatar_file.filename)}"
+            avatar_path = os.path.join(app.config['AVATARS_SAVE_PATH'], filename)
+            avatar_file.save(avatar_path)
+
+        # Update database
         cur = mysql.connection.cursor()
-        cur.execute("UPDATE users SET display_name = %s WHERE id = %s", (new_name, current_user.id))
+        cur.execute(
+            "UPDATE users SET display_name=%s, avatar=%s WHERE id=%s",
+            (new_name, filename, current_user.id)
+        )
         mysql.connection.commit()
-        flash("Display name updated!", "success")
+
+        # Refresh current_user
+        cur.execute("SELECT * FROM users WHERE id=%s", (current_user.id,))
+        user_data = cur.fetchone()
+        updated_user = User(*user_data)
+        login_user(updated_user)  # Force session update
+
+        flash("Profile updated!", "success")
         return redirect(url_for('profile'))
 
     return render_template('profile.html')

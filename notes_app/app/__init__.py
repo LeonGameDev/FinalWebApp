@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask_mysqldb import MySQL
 from flask_bcrypt import Bcrypt
@@ -21,10 +22,14 @@ from app.models import User
 def load_user(user_id):
     from app import mysql
     cur = mysql.connection.cursor()
-    cur.execute("SELECT id, email, display_name, password, is_verified, verification_token FROM users WHERE id = %s", (user_id,))
+    cur.execute("SELECT id, email, display_name, password, is_verified, verification_token, avatar FROM users WHERE id = %s", (user_id,))
     result = cur.fetchone()
     if result:
         return User(*result)
     return None
 
 from app import notes  
+from flask_avatars import Avatars
+avatars = Avatars(app)
+app.config['AVATARS_SAVE_PATH'] = os.path.join(app.static_folder, 'avatars')
+os.makedirs(app.config['AVATARS_SAVE_PATH'], exist_ok=True)  # Create folder if missing

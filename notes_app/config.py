@@ -11,3 +11,4 @@ MAIL_PORT = 587
 MAIL_USE_TLS = True
 MAIL_USERNAME = 'leole030603@gmail.com'
 MAIL_PASSWORD = 'ffup xhuv bwlu ofwm'
+
