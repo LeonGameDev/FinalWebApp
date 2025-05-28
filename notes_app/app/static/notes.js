@@ -523,11 +523,28 @@ document.getElementById('noteModal').addEventListener('hidden.bs.modal', () => {
     card.addEventListener("mouseleave", () => clearTimeout(longPressTimer));
   });
 
+  function positionToolbar(card) {
+    const rect = card.getBoundingClientRect();
+    const isMobile = window.innerWidth < 768;
+    
+    if (isMobile) {
+      // Center toolbar on mobile
+      toolbar.style.left = '50%';
+      toolbar.style.top = `${rect.top + window.scrollY - 60}px`;
+      toolbar.style.transform = 'translateX(-50%)';
+    } else {
+      // Position near card on desktop
+      toolbar.style.left = `${rect.left + window.scrollX}px`;
+      toolbar.style.top = `${rect.top + window.scrollY - 50}px`;
+      toolbar.style.transform = 'none';
+    }
+  }
   // Show the toolbar near the active note
   function showToolbar(card) {
     const rect = card.getBoundingClientRect();
     toolbar.style.left = `${rect.left + window.scrollX}px`;
     toolbar.style.top = `${rect.top + window.scrollY - 50}px`;
+    positionToolbar(card);
     toolbar.classList.remove("d-none");
     toolbar.classList.add("d-flex");
   }
@@ -538,6 +555,12 @@ document.getElementById('noteModal').addEventListener('hidden.bs.modal', () => {
     document.getElementById("pinText").textContent = isPinned ? "Unpin" : "Pin";
     document.getElementById("pinIcon").textContent = isPinned ? "📌" : "📍";
   }
+
+  window.addEventListener('resize', () => {
+    if (activeNote) {
+      positionToolbar(activeNote);
+    }
+  });
 
   // Delete button click handler
   document.getElementById("deleteBtn").addEventListener("click", () => {
@@ -652,6 +675,7 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', function()
           if (!activeNote.querySelector(".pin-icon")) {
             activeNote.insertAdjacentHTML("afterbegin", iconHTML);
           }
+          location.reload();
         } else {
           activeNote.classList.remove(pinnedClass);
           const icon = activeNote.querySelector(".pin-icon");
@@ -875,43 +899,6 @@ document.addEventListener('click', function(e) {
     document.getElementById('removeFileBtn').classList.add('d-none');
     fileConfirmed = false;
   }
-  
-  // Handle removal of already saved file
-  // if (e.target.closest('.remove-saved-file')) {
-  //   const button = e.target.closest('.remove-saved-file');
-  //   const noteId = button.dataset.noteId;
-  //   const filename = button.dataset.file;
-    
-  //   if (confirm(`Are you sure you want to remove this file?`)) {
-  //     const saveStatus = document.getElementById('saveStatus');
-  //     saveStatus.textContent = 'Removing file...';
-  //     saveStatus.className = 'text-muted small';
-      
-  //     fetch(`/note/remove_file/${noteId}`, {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/x-www-form-urlencoded',
-  //       },
-  //       body: `filename=${encodeURIComponent(filename)}`
-  //     })
-  //     .then(res => res.json())
-  //     .then(data => {
-  //       if (data.success) {
-  //         saveStatus.textContent = 'File removed successfully';
-  //         saveStatus.className = 'upload-success small';
-  //         updateFilePreview(noteId);
-          
-  //         // Clear the file input if no files left
-  //         if (data.remaining_files === 0) {
-  //           document.getElementById('noteFile').value = '';
-  //         }
-  //       } else {
-  //         saveStatus.textContent = 'Error removing file';
-  //         saveStatus.className = 'text-danger small';
-  //       }
-  //     });
-    // }
-  // }
 });
 
   reorderNotes("asc");

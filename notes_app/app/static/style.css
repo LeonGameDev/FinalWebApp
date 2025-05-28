@@ -140,3 +140,100 @@ body.bg-dark .card:hover {
   font-size: 14px;
 }
 
+/* Add these responsive styles to your existing style.css */
+@media (max-width: 767px) {
+  /* Mobile styles */
+  .card {
+    margin-bottom: 1rem;
+  }
+  
+  #notesContainer.grid-view .grid-view-item {
+    flex: 1 1 100%; /* Full width on mobile */
+    max-width: 100%;
+  }
+  
+  #notesContainer.list-view .grid-view-item {
+    flex: 1 1 100%;
+  }
+  
+  .navbar-collapse {
+    padding-top: 1rem;
+  }
+  
+  .modal-dialog {
+    margin: 0.5rem auto;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  /* Tablet styles */
+  #notesContainer.grid-view .grid-view-item {
+    flex: 1 1 calc(50% - 1rem); /* 2 columns on tablet */
+    max-width: calc(50% - 1rem);
+  }
+  
+  #notesContainer.list-view .grid-view-item {
+    flex: 1 1 100%;
+  }
+}
+
+@media (min-width: 992px) {
+  /* Desktop styles */
+  #notesContainer.grid-view .grid-view-item {
+    flex: 1 1 calc(33.333% - 1rem); /* 3 columns on desktop */
+    max-width: calc(33.333% - 1rem);
+  }
+  
+  #notesContainer.list-view .grid-view-item {
+    flex: 1 1 calc(50% - 1rem); /* 2 columns for list view */
+    max-width: calc(50% - 1rem);
+  }
+}
+
+/* Make sure these are in your existing CSS */
+#notesContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+/* Ensure modals are responsive */
+.modal-dialog {
+  max-width: 95%;
+  margin: 1.75rem auto;
+}
+
+/* Responsive navbar items */
+.navbar-nav {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 576px) {
+  .navbar-nav .nav-item {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  #themeToggle {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+  
+  .modal-content {
+    padding: 0.75rem;
+  }
+}
+
+/* Prevent horizontal scrolling */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Make file previews responsive */
+#filePreview img {
+  max-width: 100%;
+  height: auto;
+}
+
