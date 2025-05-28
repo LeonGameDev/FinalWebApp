@@ -35,7 +35,7 @@ CREATE TABLE `notes` (
   `color` varchar(7) DEFAULT NULL,
   `pinned` tinyint(1) DEFAULT 0,
   `is_locked` tinyint(1) DEFAULT 0,
-  `created_at` bigint(20) UNSIGNED DEFAULT unix_timestamp(),
+  `created_at` bigint(20) UNSIGNED,
   `password_hash` varchar(255) DEFAULT NULL,
   `file_url` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
