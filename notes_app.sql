@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 24, 2025 at 03:29 AM
+-- Generation Time: May 28, 2025 at 03:32 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -50,7 +50,7 @@ INSERT INTO `notes` (`id`, `user_id`, `title`, `content`, `color`, `pinned`, `is
 (5, 1, 'Shopping List', 'Eggs, Bread, Milk, Coffee', '#62c520', 0, 0, 1702000000, NULL, NULL),
 (6, 1, 'Study Plan', '1. Flask basics\n2. SQL joins\n3. Flask-Login', '#d69a9a', 0, 0, 1703000000, NULL, NULL),
 (7, 1, 'Workout Routine', 'Pushups, Situps, Squats, Plank', '#92289a', 0, 0, 170400000, NULL, NULL),
-(8, 1, 'Books to Read', 'Clean Code, Atomic Habits, Deep Work', '#8593d5', 0, 0, 1705000000, '', NULL),
+(8, 1, 'Books to Read', 'Clean Code, Atomic Habits, Deep Work', '#00bfff', 0, 0, 1705000000, '', NULL),
 (9, 1, 'Birthday Plans', 'Book a table, invite friends, get a cake', NULL, 0, 0, 1706000000, NULL, NULL),
 (10, 1, 'Website Ideas', 'Note-taking app, To-do tracker, Budget planner', NULL, 0, 0, 1707000000, NULL, NULL),
 (11, 1, 'Code Snippets', 'Remember how to hash passwords with bcrypt', NULL, 0, 0, 1708000000, '', NULL),
@@ -67,6 +67,21 @@ INSERT INTO `notes` (`id`, `user_id`, `title`, `content`, `color`, `pinned`, `is
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `shared_notes`
+--
+
+CREATE TABLE `shared_notes` (
+  `id` int(11) NOT NULL,
+  `note_id` int(11) NOT NULL,
+  `owner_id` int(11) NOT NULL,
+  `recipient_id` int(11) NOT NULL,
+  `permission` enum('view','edit') NOT NULL DEFAULT 'view',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `users`
 --
 
@@ -76,16 +91,17 @@ CREATE TABLE `users` (
   `display_name` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
   `is_verified` tinyint(1) DEFAULT 0,
-  `verification_token` varchar(255) DEFAULT NULL
+  `verification_token` varchar(255) DEFAULT NULL,
+  `avatar` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `email`, `display_name`, `password`, `is_verified`, `verification_token`) VALUES
-(1, 'kenshinhimura2173@gmail.com', 'kenshinhimura2173', '$2b$12$.fLrMZl.LWgyHw/50CG4R.qYLe5EgjbnelIpYJarvtdIVS8rSH586', 1, NULL),
-(6, 'leole030603@gmail.com', 'leole030603', '$2b$12$UKZB43NJc2Fzai5g8KU7BOb6r2CeFwf1RIpA3cqFLnt2rBwjj5jdG', 1, NULL);
+INSERT INTO `users` (`id`, `email`, `display_name`, `password`, `is_verified`, `verification_token`, `avatar`) VALUES
+(1, 'kenshinhimura2173@gmail.com', 'kenshinhimura2173', '$2b$12$.fLrMZl.LWgyHw/50CG4R.qYLe5EgjbnelIpYJarvtdIVS8rSH586', 1, NULL, 'user_1_download.jpg'),
+(6, 'leole030603@gmail.com', 'leole030603', '$2b$12$UKZB43NJc2Fzai5g8KU7BOb6r2CeFwf1RIpA3cqFLnt2rBwjj5jdG', 1, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -97,6 +113,15 @@ INSERT INTO `users` (`id`, `email`, `display_name`, `password`, `is_verified`, `
 ALTER TABLE `notes`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `shared_notes`
+--
+ALTER TABLE `shared_notes`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_sharing` (`note_id`,`recipient_id`),
+  ADD KEY `owner_id` (`owner_id`),
+  ADD KEY `recipient_id` (`recipient_id`);
 
 --
 -- Indexes for table `users`
@@ -113,7 +138,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `notes`
 --
 ALTER TABLE `notes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+
+--
+-- AUTO_INCREMENT for table `shared_notes`
+--
+ALTER TABLE `shared_notes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -130,6 +161,14 @@ ALTER TABLE `users`
 --
 ALTER TABLE `notes`
   ADD CONSTRAINT `notes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `shared_notes`
+--
+ALTER TABLE `shared_notes`
+  ADD CONSTRAINT `shared_notes_ibfk_1` FOREIGN KEY (`note_id`) REFERENCES `notes` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `shared_notes_ibfk_2` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `shared_notes_ibfk_3` FOREIGN KEY (`recipient_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
